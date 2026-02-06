@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateConsumeRequestDto } from './dto/create-consume-request.dto';
 import { UpdateConsumeRequestDto } from './dto/update-consume-request.dto';
 import { ConsumeRequest, RequestStatus } from './entities/consume-request.entity';
+import { Inventory } from '../inventory/entities/inventory.entity';
 import { LogBookService } from '../log-book/log-book.service';
 import { LogType } from '../log-book/entities/log-book.entity';
 
@@ -12,6 +13,8 @@ export class ConsumeRequestService {
   constructor(
     @InjectRepository(ConsumeRequest)
     private consumeRequestRepository: Repository<ConsumeRequest>,
+    @InjectRepository(Inventory)
+    private inventoryRepository: Repository<Inventory>,
     private readonly logBookService: LogBookService,
   ) {}
 
@@ -58,6 +61,34 @@ export class ConsumeRequestService {
       throw new BadRequestException('Only pending requests can be approved');
     }
 
+    // Find the inventory item for this spare part in the unit's workshop
+    const workshopId = request.user_unit?.workshop_id;
+    if (!workshopId) {
+      throw new BadRequestException('Cannot determine workshop for this unit');
+    }
+
+    const inventoryItem = await this.inventoryRepository.findOne({
+      where: {
+        workshop_id: workshopId,
+        spare_part_id: request.spare_part_id,
+      },
+    });
+
+    if (!inventoryItem) {
+      throw new BadRequestException('No inventory found for this spare part in the workshop');
+    }
+
+    if (inventoryItem.quantity < request.requested_quantity) {
+      throw new BadRequestException(
+        `Insufficient stock. Available: ${inventoryItem.quantity}, Requested: ${request.requested_quantity}`,
+      );
+    }
+
+    // Decrement inventory
+    inventoryItem.quantity -= request.requested_quantity;
+    await this.inventoryRepository.save(inventoryItem);
+
+    // Approve the request
     request.status = RequestStatus.APPROVED;
     request.approved_by_id = approvedById;
     request.approved_at = new Date();
@@ -69,13 +100,15 @@ export class ConsumeRequestService {
     await this.logBookService.create({
       user_unit_id: request.user_unit_id,
       log_type: LogType.INVENTORY_CONSUMED,
-      description: `Consumed ${request.requested_quantity}x "${sparePartName}" (request approved)`,
+      description: `Consumed ${request.requested_quantity}x "${sparePartName}" (request approved). Stock: ${inventoryItem.quantity + request.requested_quantity} → ${inventoryItem.quantity}`,
       performed_by_id: approvedById,
       metadata: {
         consume_request_id: request.id,
         spare_part_id: request.spare_part_id,
         spare_part_name: sparePartName,
         quantity: request.requested_quantity,
+        stock_before: inventoryItem.quantity + request.requested_quantity,
+        stock_after: inventoryItem.quantity,
       },
     });
 
