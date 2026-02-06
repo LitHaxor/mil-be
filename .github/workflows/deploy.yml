@@ -1,0 +1,40 @@
+name: Push to Azure Container Registry
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  API_IMAGE_NAME: mil-be-api
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build API Docker image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile .
+
+      - name: Push API Docker image to ACR
+        run: |
+          docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Images pushed successfully
+        run: |
+          echo "✅ Images pushed to ACR successfully!"
+          echo "API Image: ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          echo "Worker Image: ${{ env.ACR_LOGIN_SERVER }}/${{ env.WORKER_IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
