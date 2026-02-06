@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 COPY package.json yarn.lock ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN yarn install --frozen-lockfile
+RUN yarn install --immutable
 
 # Copy source code
 COPY . .
@@ -38,9 +38,8 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package.json yarn.lock ./
 
-# Install only production dependencies
-RUN yarn install --production --frozen-lockfile && \
-    yarn cache clean
+# Copy node_modules from builder (includes all dependencies)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
