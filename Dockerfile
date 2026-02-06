@@ -4,17 +4,20 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Install yarn
+RUN corepack enable && corepack prepare yarn@stable --activate
+
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN yarn build
 
 # Stage 2: Production
 FROM node:20-alpine AS production
@@ -25,16 +28,19 @@ WORKDIR /app
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
+# Install yarn
+RUN corepack enable && corepack prepare yarn@stable --activate
+
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
 
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock ./
 
 # Install only production dependencies
-RUN npm ci --only=production && \
-    npm cache clean --force
+RUN yarn install --production --frozen-lockfile && \
+    yarn cache clean
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
