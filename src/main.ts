@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { NestjsRedoxModule, RedocOptions } from 'nestjs-redox';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -43,59 +42,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
   // Setup Swagger UI
-  SwaggerModule.setup('api', app, document);
-
-  // Redoc styling options
-  const redocOptions: RedocOptions = {
-    logo: {
-      url: 'https://redocly.github.io/redoc/petstore-logo.png',
-      altText: 'Mil Shop',
-      backgroundColor: '#FFFFFF',
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
     },
-    sortPropsAlphabetically: true,
-    hideDownloadButton: false,
-    hideHostname: false,
-    requiredPropsFirst: true,
-    expandResponses: '200,201',
-    theme: {
-      colors: {
-        primary: {
-          main: '#2563eb',
-        },
-      },
-      typography: {
-        fontSize: '14px',
-        fontFamily: 'Roboto, sans-serif',
-        headings: {
-          fontFamily: 'Montserrat, sans-serif',
-        },
-      },
-      sidebar: {
-        width: '300px',
-        backgroundColor: '#fafafa',
-      },
-      rightPanel: {
-        backgroundColor: '#263238',
-      },
-    },
-  };
-
-  // Setup Redoc with nestjs-redox
-  await NestjsRedoxModule.setup(
-    'docs',
-    app,
-    document,
-    {
-      useGlobalPrefix: false,
-      standalone: true,
-      disableGoogleFont: false,
-    },
-    redocOptions,
-  );
+  });
 
   await app.listen(process.env.PORT ?? 3001);
   console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3001}`);
   console.log(`Swagger UI: http://localhost:${process.env.PORT ?? 3001}/api`);
-  console.log(`Redoc: http://localhost:${process.env.PORT ?? 3001}/docs`);
 }
 bootstrap();
