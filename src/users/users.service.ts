@@ -12,7 +12,7 @@ export class UsersService {
 
   async findAll(): Promise<any[]> {
     const users = await this.userRepository.find({
-      select: ['id', 'email', 'full_name', 'role', 'workshop_id', 'is_active'],
+      select: ['id', 'email', 'full_name', 'role', 'workshop_id', 'is_active', 'created_at'],
       where: { is_active: true },
     });
 

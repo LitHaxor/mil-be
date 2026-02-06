@@ -49,6 +49,16 @@ export class UserUnitService {
 
   async update(id: string, updateUserUnitDto: UpdateUserUnitDto): Promise<UserUnit> {
     const userUnit = await this.findOne(id);
+
+    // Handle status-related timestamps
+    if (updateUserUnitDto.status && updateUserUnitDto.status !== userUnit.status) {
+      if (updateUserUnitDto.status === UnitStatus.EXITED) {
+        userUnit.exited_at = new Date();
+      } else if (updateUserUnitDto.status === UnitStatus.UNDER_MAINTENANCE) {
+        userUnit.last_maintenance_at = new Date();
+      }
+    }
+
     Object.assign(userUnit, updateUserUnitDto);
     return await this.userUnitRepository.save(userUnit);
   }
