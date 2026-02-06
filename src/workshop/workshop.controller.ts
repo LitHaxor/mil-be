@@ -34,15 +34,13 @@ export class WorkshopController {
     return this.workshopService.findAll(req.user.id, req.user.role);
   }
 
-  @Get(':id')
+  @Get(':id/analytics')
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
-  @ApiOperation({ summary: 'Get workshop by ID', description: 'Retrieve a specific workshop by ID' })
+  @ApiOperation({ summary: 'Get dashboard analytics', description: 'Get analytics data for dashboard charts' })
   @ApiParam({ name: 'id', description: 'Workshop ID' })
-  @ApiResponse({ status: 200, description: 'Returns the workshop' })
-  @ApiResponse({ status: 404, description: 'Workshop not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findOne(@Param('id') id: string) {
-    return this.workshopService.findOne(id);
+  @ApiResponse({ status: 200, description: 'Returns analytics data' })
+  getAnalytics(@Param('id') id: string) {
+    return this.workshopService.getDashboardAnalytics(id);
   }
 
   @Get(':id/stats')
@@ -65,6 +63,17 @@ export class WorkshopController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getUsers(@Param('id') id: string) {
     return this.workshopService.getWorkshopUsers(id);
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get workshop by ID', description: 'Retrieve a specific workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns the workshop' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findOne(@Param('id') id: string) {
+    return this.workshopService.findOne(id);
   }
 
   @Patch(':id')

@@ -4,12 +4,21 @@ import { Repository } from 'typeorm';
 import { CreateWorkshopDto } from './dto/create-workshop.dto';
 import { UpdateWorkshopDto } from './dto/update-workshop.dto';
 import { Workshop } from './entities/workshop.entity';
+import { ConsumeRequest } from '../consume-request/entities/consume-request.entity';
+import { UserUnit } from '../user-unit/entities/user-unit.entity';
+import { User, UserRole } from '../entities/user.entity';
 
 @Injectable()
 export class WorkshopService {
   constructor(
     @InjectRepository(Workshop)
-    private workshopRepository: Repository<Workshop>,
+    private readonly workshopRepository: Repository<Workshop>,
+    @InjectRepository(ConsumeRequest)
+    private readonly consumeRequestRepository: Repository<ConsumeRequest>,
+    @InjectRepository(UserUnit)
+    private readonly userUnitRepository: Repository<UserUnit>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createWorkshopDto: CreateWorkshopDto, createdById?: string): Promise<Workshop> {
@@ -115,5 +124,105 @@ export class WorkshopService {
       role: user.role,
       is_active: user.is_active,
     })) || [];
+  }
+
+  async getDashboardAnalytics(workshopId: string) {
+    // 1. Top consumed spare parts (by approved consume requests)
+    const topConsumed = await this.consumeRequestRepository
+      .createQueryBuilder('cr')
+      .select('cr.spare_part_id', 'spare_part_id')
+      .addSelect('sp.name', 'name')
+      .addSelect('sp.part_number', 'part_number')
+      .addSelect('SUM(cr.requested_quantity)', 'total_consumed')
+      .addSelect('COUNT(cr.id)', 'request_count')
+      .innerJoin('cr.spare_part', 'sp')
+      .innerJoin('cr.user_unit', 'unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('cr.status = :status', { status: 'approved' })
+      .groupBy('cr.spare_part_id')
+      .addGroupBy('sp.name')
+      .addGroupBy('sp.part_number')
+      .orderBy('total_consumed', 'DESC')
+      .limit(6)
+      .getRawMany();
+
+    // 2. Unit maintenance stats (avg time in workshop for completed units)
+    const maintenanceStats = await this.userUnitRepository
+      .createQueryBuilder('unit')
+      .select('unit.unit_type', 'unit_type')
+      .addSelect('COUNT(unit.id)', 'total_units')
+      .addSelect(
+        `AVG(EXTRACT(EPOCH FROM (COALESCE(unit.exited_at, NOW()) - unit.entered_at)) / 86400)`,
+        'avg_days',
+      )
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('unit.entered_at IS NOT NULL')
+      .groupBy('unit.unit_type')
+      .getRawMany();
+
+    // 3. Monthly consume request trends (last 6 months)
+    const monthlyTrends = await this.consumeRequestRepository
+      .createQueryBuilder('cr')
+      .select(`TO_CHAR(cr.created_at, 'YYYY-MM')`, 'month')
+      .addSelect('COUNT(cr.id)', 'total_requests')
+      .addSelect(`SUM(CASE WHEN cr.status = 'approved' THEN 1 ELSE 0 END)`, 'approved')
+      .addSelect(`SUM(CASE WHEN cr.status = 'rejected' THEN 1 ELSE 0 END)`, 'rejected')
+      .addSelect(`SUM(CASE WHEN cr.status = 'pending' THEN 1 ELSE 0 END)`, 'pending')
+      .innerJoin('cr.user_unit', 'unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('cr.created_at >= NOW() - INTERVAL \'6 months\'')
+      .groupBy(`TO_CHAR(cr.created_at, 'YYYY-MM')`)
+      .orderBy('month', 'ASC')
+      .getRawMany();
+
+    // 4. Active inspectors assigned to this workshop
+    const inspectors = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.full_name', 'user.email', 'user.is_active', 'user.updated_at'])
+      .where('user.workshop_id = :workshopId', { workshopId })
+      .andWhere('user.role = :role', { role: UserRole.INSPECTOR })
+      .andWhere('user.is_active = :isActive', { isActive: true })
+      .getMany();
+
+    // 5. Unit status breakdown
+    const unitStatusBreakdown = await this.userUnitRepository
+      .createQueryBuilder('unit')
+      .select('unit.status', 'status')
+      .addSelect('COUNT(unit.id)', 'count')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .groupBy('unit.status')
+      .getRawMany();
+
+    return {
+      topConsumed: topConsumed.map(item => ({
+        spare_part_id: item.spare_part_id,
+        name: item.name,
+        part_number: item.part_number,
+        total_consumed: Number(item.total_consumed),
+        request_count: Number(item.request_count),
+      })),
+      maintenanceStats: maintenanceStats.map(item => ({
+        unit_type: item.unit_type,
+        total_units: Number(item.total_units),
+        avg_days: Math.round(Number(item.avg_days) * 10) / 10,
+      })),
+      monthlyTrends: monthlyTrends.map(item => ({
+        month: item.month,
+        total_requests: Number(item.total_requests),
+        approved: Number(item.approved),
+        rejected: Number(item.rejected),
+        pending: Number(item.pending),
+      })),
+      inspectors: inspectors.map(i => ({
+        id: i.id,
+        full_name: i.full_name,
+        email: i.email,
+        is_active: i.is_active,
+      })),
+      unitStatusBreakdown: unitStatusBreakdown.map(item => ({
+        status: item.status || 'unknown',
+        count: Number(item.count),
+      })),
+    };
   }
 }
