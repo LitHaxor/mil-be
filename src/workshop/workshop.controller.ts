@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { WorkshopService } from './workshop.service';
 import { CreateWorkshopDto } from './dto/create-workshop.dto';
 import { UpdateWorkshopDto } from './dto/update-workshop.dto';
@@ -7,6 +8,8 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { UserRole } from '../entities/user.entity';
 
+@ApiTags('Workshops')
+@ApiBearerAuth()
 @Controller('workshops')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkshopController {
@@ -14,42 +17,76 @@ export class WorkshopController {
 
   @Post()
   @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create workshop', description: 'Create a new workshop' })
+  @ApiResponse({ status: 201, description: 'Workshop created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   create(@Body() createWorkshopDto: CreateWorkshopDto, @Request() req) {
     return this.workshopService.create(createWorkshopDto, req.user.userId);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Get all workshops', description: 'Retrieve all workshops' })
+  @ApiResponse({ status: 200, description: 'Returns list of workshops' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll() {
     return this.workshopService.findAll();
   }
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get workshop by ID', description: 'Retrieve a specific workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns the workshop' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   findOne(@Param('id') id: string) {
     return this.workshopService.findOne(id);
   }
 
   @Get(':id/stats')
   @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Get workshop statistics', description: 'Get statistics for a specific workshop' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns workshop statistics' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   getStats(@Param('id') id: string) {
     return this.workshopService.getWorkshopStats(id);
   }
 
   @Get(':id/users')
   @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Get workshop users', description: 'Get all users assigned to a workshop' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns list of users' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   getUsers(@Param('id') id: string) {
     return this.workshopService.getWorkshopUsers(id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Update workshop', description: 'Update a workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Workshop updated successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
   update(@Param('id') id: string, @Body() updateWorkshopDto: UpdateWorkshopDto) {
     return this.workshopService.update(id, updateWorkshopDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete workshop', description: 'Delete a workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Workshop deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   remove(@Param('id') id: string) {
     return this.workshopService.remove(id);
   }
