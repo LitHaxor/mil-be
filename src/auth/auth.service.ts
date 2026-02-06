@@ -84,7 +84,7 @@ export class AuthService {
     const permissions = {
       pages: [] as string[],
       features: {} as Record<string, any>,
-      navigation: [] as Array<{ label: string; path: string; icon?: string }>,
+      navigation: [] as Array<{ label: string; path: string; icon?: string; group?: string }>,
     };
 
     switch (role) {
@@ -112,13 +112,13 @@ export class AuthService {
         };
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-          { label: 'Workshops', path: '/dashboard/workshops', icon: 'Building' },
-          { label: 'Users', path: '/dashboard/users', icon: 'Users' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
           { label: 'Spare Parts', path: '/dashboard/spare-parts', icon: 'Wrench' },
           { label: 'Consume Requests', path: '/dashboard/consume-requests', icon: 'FileText' },
           { label: 'Source Requests', path: '/dashboard/source-requests', icon: 'ShoppingCart' },
+          { label: 'Workshops', path: '/dashboard/workshops', icon: 'Building', group: 'administration' },
+          { label: 'Users', path: '/dashboard/users', icon: 'Users', group: 'administration' },
         ];
         break;
 
