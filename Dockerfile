@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 COPY package.json yarn.lock ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN yarn install --immutable
+RUN yarn install
 
 # Copy source code
 COPY . .
