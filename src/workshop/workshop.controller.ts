@@ -26,12 +26,12 @@ export class WorkshopController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC)
-  @ApiOperation({ summary: 'Get all workshops', description: 'Retrieve all workshops' })
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get all workshops', description: 'Retrieve all workshops (filtered by assignment for inspectors)' })
   @ApiResponse({ status: 200, description: 'Returns list of workshops' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findAll() {
-    return this.workshopService.findAll();
+  findAll(@Request() req) {
+    return this.workshopService.findAll(req.user.id, req.user.role);
   }
 
   @Get(':id')

@@ -78,7 +78,7 @@ async function seed() {
 
           // Try to find user by email
           const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-          const existingUser = users.users.find(u => u.email === userData.email);
+          const existingUser = users?.users?.find((u: any) => u.email === userData.email);
 
           if (existingUser) {
             // Update or create user in local database

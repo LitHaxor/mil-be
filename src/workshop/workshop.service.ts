@@ -20,14 +20,22 @@ export class WorkshopService {
     return await this.workshopRepository.save(workshop);
   }
 
-  async findAll(): Promise<any[]> {
-    const workshops = await this.workshopRepository
+  async findAll(userId?: string, userRole?: string): Promise<any[]> {
+    const queryBuilder = this.workshopRepository
       .createQueryBuilder('workshop')
       .leftJoinAndSelect('workshop.owner', 'owner')
       .loadRelationCountAndMap('workshop._count.users', 'workshop.users')
       .loadRelationCountAndMap('workshop._count.units', 'workshop.user_units')
-      .where('workshop.is_active = :isActive', { isActive: true })
-      .getMany();
+      .where('workshop.is_active = :isActive', { isActive: true });
+
+    // If user is an inspector, only show workshops they're assigned to
+    if (userRole === 'inspector' && userId) {
+      queryBuilder
+        .innerJoin('workshop.users', 'user')
+        .andWhere('user.id = :userId', { userId });
+    }
+
+    const workshops = await queryBuilder.getMany();
 
     return workshops.map((workshop: any) => ({
       id: workshop.id,
