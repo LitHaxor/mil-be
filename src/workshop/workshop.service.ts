@@ -24,8 +24,8 @@ export class WorkshopService {
     const queryBuilder = this.workshopRepository
       .createQueryBuilder('workshop')
       .leftJoinAndSelect('workshop.owner', 'owner')
-      .loadRelationCountAndMap('workshop._count.users', 'workshop.users')
-      .loadRelationCountAndMap('workshop._count.units', 'workshop.user_units')
+      .loadRelationCountAndMap('workshop.usersCount', 'workshop.users')
+      .loadRelationCountAndMap('workshop.unitsCount', 'workshop.user_units')
       .where('workshop.is_active = :isActive', { isActive: true });
 
     // If user is an inspector, only show workshops they're assigned to
@@ -51,7 +51,10 @@ export class WorkshopService {
         email: workshop.owner.email,
         full_name: workshop.owner.full_name,
       } : null,
-      _count: workshop._count || { users: 0, units: 0 },
+      _count: {
+        users: workshop.usersCount || 0,
+        units: workshop.unitsCount || 0,
+      },
     }));
   }
 
