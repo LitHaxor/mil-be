@@ -95,9 +95,6 @@ export class AuthService {
           'users',
           'units',
           'inventory',
-          'spare-parts',
-          'consume-requests',
-          'source-requests',
         ];
         permissions.features = {
           workshops: { canCreate: true, canEdit: true, canDelete: true, canView: true },
@@ -114,9 +111,6 @@ export class AuthService {
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
-          { label: 'Spare Parts', path: '/dashboard/spare-parts', icon: 'Wrench' },
-          { label: 'Consume Requests', path: '/dashboard/consume-requests', icon: 'FileText' },
-          { label: 'Source Requests', path: '/dashboard/source-requests', icon: 'ShoppingCart' },
           { label: 'Workshops', path: '/dashboard/workshops', icon: 'Building', group: 'administration' },
           { label: 'Users', path: '/dashboard/users', icon: 'Users', group: 'administration' },
         ];
@@ -127,9 +121,6 @@ export class AuthService {
           'dashboard',
           'units',
           'inventory',
-          'spare-parts',
-          'consume-requests',
-          'source-requests',
         ];
         permissions.features = {
           units: { canCreate: true, canEdit: true, canDelete: false, canView: true },
@@ -144,9 +135,6 @@ export class AuthService {
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
-          { label: 'Spare Parts', path: '/dashboard/spare-parts', icon: 'Wrench' },
-          { label: 'Consume Requests', path: '/dashboard/consume-requests', icon: 'FileText' },
-          { label: 'Source Requests', path: '/dashboard/source-requests', icon: 'ShoppingCart' },
         ];
         break;
 
@@ -155,7 +143,6 @@ export class AuthService {
           'dashboard',
           'units',
           'inventory',
-          'consume-requests',
         ];
         permissions.features = {
           units: { canCreate: true, canEdit: false, canDelete: false, canView: true },
@@ -168,7 +155,6 @@ export class AuthService {
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
-          { label: 'Consume Requests', path: '/dashboard/consume-requests', icon: 'FileText' },
         ];
         break;
     }

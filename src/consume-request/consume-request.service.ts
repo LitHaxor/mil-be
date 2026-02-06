@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { CreateConsumeRequestDto } from './dto/create-consume-request.dto';
 import { UpdateConsumeRequestDto } from './dto/update-consume-request.dto';
 import { ConsumeRequest, RequestStatus } from './entities/consume-request.entity';
+import { LogBookService } from '../log-book/log-book.service';
+import { LogType } from '../log-book/entities/log-book.entity';
 
 @Injectable()
 export class ConsumeRequestService {
   constructor(
     @InjectRepository(ConsumeRequest)
     private consumeRequestRepository: Repository<ConsumeRequest>,
+    private readonly logBookService: LogBookService,
   ) {}
 
   async create(createConsumeRequestDto: CreateConsumeRequestDto): Promise<ConsumeRequest> {
@@ -59,7 +62,24 @@ export class ConsumeRequestService {
     request.approved_by_id = approvedById;
     request.approved_at = new Date();
 
-    return await this.consumeRequestRepository.save(request);
+    const saved = await this.consumeRequestRepository.save(request);
+
+    // Auto-log inventory consumed
+    const sparePartName = request.spare_part?.name || 'Unknown part';
+    await this.logBookService.create({
+      user_unit_id: request.user_unit_id,
+      log_type: LogType.INVENTORY_CONSUMED,
+      description: `Consumed ${request.requested_quantity}x "${sparePartName}" (request approved)`,
+      performed_by_id: approvedById,
+      metadata: {
+        consume_request_id: request.id,
+        spare_part_id: request.spare_part_id,
+        spare_part_name: sparePartName,
+        quantity: request.requested_quantity,
+      },
+    });
+
+    return saved;
   }
 
   async reject(id: string, approvedById: string, reason: string): Promise<ConsumeRequest> {
