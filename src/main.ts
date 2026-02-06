@@ -8,7 +8,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://mil-client.vercel.app'],
     credentials: true,
   });
 
@@ -23,7 +23,9 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Mil Shop API')
-    .setDescription('Mil Shop API Documentation - Military Workshop Management System')
+    .setDescription(
+      'Mil Shop API Documentation - Military Workshop Management System',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('Authentication', 'User authentication and authorization endpoints')
@@ -49,7 +51,9 @@ async function bootstrap() {
   });
 
   await app.listen(process.env.PORT ?? 3001);
-  console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3001}`);
+  console.log(
+    `Application is running on: http://localhost:${process.env.PORT ?? 3001}`,
+  );
   console.log(`Swagger UI: http://localhost:${process.env.PORT ?? 3001}/api`);
 }
 bootstrap();
