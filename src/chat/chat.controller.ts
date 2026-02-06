@@ -6,7 +6,8 @@ import { UpdateChatDto } from './dto/update-chat.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
-import { UserRole } from '../entities/user.entity';
+import { GetUser } from '../decorators/get-user.decorator';
+import { UserRole, User } from '../entities/user.entity';
 
 @ApiTags('Chat')
 @ApiBearerAuth()
@@ -70,13 +71,13 @@ export class ChatController {
 
   @Patch(':id/read')
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
-  @ApiOperation({ summary: 'Mark message as read', description: 'Mark a chat message as read' })
+  @ApiOperation({ summary: 'Mark message as seen', description: 'Add current user to seen_by array' })
   @ApiParam({ name: 'id', description: 'Chat message ID' })
-  @ApiResponse({ status: 200, description: 'Message marked as read' })
+  @ApiResponse({ status: 200, description: 'User added to seen_by' })
   @ApiResponse({ status: 404, description: 'Chat message not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  markAsRead(@Param('id') id: string) {
-    return this.chatService.markAsRead(id);
+  markAsRead(@Param('id') id: string, @GetUser() user: User) {
+    return this.chatService.markAsRead(id, user.id);
   }
 
   @Delete(':id')

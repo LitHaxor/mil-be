@@ -34,6 +34,9 @@ export class ChatMessage {
   @Column({ default: false })
   is_read: boolean;
 
+  @Column('uuid', { array: true, default: [] })
+  seen_by: string[];
+
   @CreateDateColumn()
   created_at: Date;
 }

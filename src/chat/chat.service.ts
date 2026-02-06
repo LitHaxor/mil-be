@@ -47,9 +47,17 @@ export class ChatService {
     return await this.chatRepository.save(message);
   }
 
-  async markAsRead(id: string): Promise<ChatMessage> {
+  async markAsRead(id: string, userId: string): Promise<ChatMessage> {
     const message = await this.findOne(id);
+
+    // Add userId to seen_by array if not already present
+    if (!message.seen_by.includes(userId)) {
+      message.seen_by.push(userId);
+    }
+
+    // Also set is_read to true for backward compatibility
     message.is_read = true;
+
     return await this.chatRepository.save(message);
   }
 
