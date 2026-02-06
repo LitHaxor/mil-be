@@ -7,14 +7,11 @@ WORKDIR /app
 # Install yarn
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-# Copy package files
-COPY package.json yarn.lock ./
+# Copy all files
+COPY . .
 
 # Install all dependencies (including dev dependencies for build)
 RUN yarn install
-
-# Copy source code
-COPY . .
 
 # Build the application
 RUN yarn build
