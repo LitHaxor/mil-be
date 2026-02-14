@@ -84,7 +84,12 @@ export class AuthService {
     const permissions = {
       pages: [] as string[],
       features: {} as Record<string, any>,
-      navigation: [] as Array<{ label: string; path: string; icon?: string; group?: string }>,
+      navigation: [] as Array<{
+        label: string;
+        path: string;
+        icon?: string;
+        group?: string;
+      }>,
     };
 
     switch (role) {
@@ -97,38 +102,120 @@ export class AuthService {
           'inventory',
         ];
         permissions.features = {
-          workshops: { canCreate: true, canEdit: true, canDelete: true, canView: true },
-          users: { canCreate: true, canEdit: true, canDelete: true, canView: true },
-          units: { canCreate: true, canEdit: true, canDelete: true, canView: true },
-          inventory: { canCreate: true, canEdit: true, canDelete: true, canView: true, canAdjust: true },
-          spareParts: { canCreate: true, canEdit: true, canDelete: true, canView: true },
-          consumeRequests: { canCreate: true, canApprove: true, canReject: true, canView: true, canDelete: true },
-          sourceRequests: { canCreate: true, canApprove: true, canMarkSourced: true, canView: true, canDelete: true },
-          logBook: { canCreate: true, canEdit: true, canDelete: true, canView: true },
+          workshops: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+          },
+          users: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+          },
+          units: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+          },
+          inventory: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+            canAdjust: true,
+          },
+          spareParts: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+          },
+          consumeRequests: {
+            canCreate: true,
+            canApprove: true,
+            canReject: true,
+            canView: true,
+            canDelete: true,
+          },
+          sourceRequests: {
+            canCreate: true,
+            canApprove: true,
+            canMarkSourced: true,
+            canView: true,
+            canDelete: true,
+          },
+          logBook: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: true,
+            canView: true,
+          },
           chat: { canCreate: true, canView: true, canDelete: true },
         };
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
-          { label: 'Workshops', path: '/dashboard/workshops', icon: 'Building', group: 'administration' },
-          { label: 'Users', path: '/dashboard/users', icon: 'Users', group: 'administration' },
+          {
+            label: 'Workshops',
+            path: '/dashboard/workshops',
+            icon: 'Building',
+            group: 'administration',
+          },
+          {
+            label: 'Users',
+            path: '/dashboard/users',
+            icon: 'Users',
+            group: 'administration',
+          },
         ];
         break;
 
       case UserRole.OC:
-        permissions.pages = [
-          'dashboard',
-          'units',
-          'inventory',
-        ];
+        permissions.pages = ['dashboard', 'units', 'inventory'];
         permissions.features = {
-          units: { canCreate: true, canEdit: true, canDelete: false, canView: true },
-          inventory: { canCreate: true, canEdit: true, canDelete: false, canView: true, canAdjust: true },
-          spareParts: { canCreate: true, canEdit: true, canDelete: false, canView: true },
-          consumeRequests: { canCreate: true, canApprove: true, canReject: true, canView: true, canDelete: false },
-          sourceRequests: { canCreate: true, canApprove: true, canMarkSourced: true, canView: true, canDelete: false },
-          logBook: { canCreate: true, canEdit: true, canDelete: false, canView: true },
+          units: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: false,
+            canView: true,
+          },
+          inventory: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: false,
+            canView: true,
+            canAdjust: true,
+          },
+          spareParts: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: false,
+            canView: true,
+          },
+          consumeRequests: {
+            canCreate: true,
+            canApprove: true,
+            canReject: true,
+            canView: true,
+            canDelete: false,
+          },
+          sourceRequests: {
+            canCreate: true,
+            canApprove: true,
+            canMarkSourced: true,
+            canView: true,
+            canDelete: false,
+          },
+          logBook: {
+            canCreate: true,
+            canEdit: true,
+            canDelete: false,
+            canView: true,
+          },
           chat: { canCreate: true, canView: true, canDelete: false },
         };
         permissions.navigation = [
@@ -139,20 +226,40 @@ export class AuthService {
         break;
 
       case UserRole.INSPECTOR_RI_AND_I:
-        permissions.pages = [
-          'dashboard',
-          'units',
-          'inventory',
-        ];
+        permissions.pages = ['dashboard', 'units', 'inventory', 'entries'];
         permissions.features = {
-          units: { canCreate: true, canEdit: false, canDelete: false, canView: true },
-          inventory: { canCreate: false, canEdit: false, canDelete: false, canView: true, canAdjust: false },
-          consumeRequests: { canCreate: true, canApprove: false, canReject: false, canView: true, canDelete: false },
-          logBook: { canCreate: true, canEdit: false, canDelete: false, canView: true },
+          units: {
+            canCreate: true,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
+          inventory: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+            canAdjust: false,
+          },
+          entries: { canCreate: true, canView: true },
+          consumeRequests: {
+            canCreate: true,
+            canApprove: false,
+            canReject: false,
+            canView: true,
+            canDelete: false,
+          },
+          logBook: {
+            canCreate: true,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
           chat: { canCreate: true, canView: true, canDelete: false },
         };
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
+          { label: 'Entry', path: '/dashboard/entries', icon: 'ClipboardList' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
         ];

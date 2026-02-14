@@ -10,6 +10,7 @@ import { Entry } from '../entities/entry.entity';
 import { Workshop } from '../workshop/entities/workshop.entity';
 import { UserUnit } from '../user-unit/entities/user-unit.entity';
 import { User, UserRole } from '../entities/user.entity';
+import { JobCard, JobCardStatus } from '../entities/job-card.entity';
 import { CreateEntryDto } from './dto/create-entry.dto';
 import { UpdateEntryDto } from './dto/update-entry.dto';
 import { AutoLoggerService } from '../log-book/services/auto-logger.service';
@@ -24,6 +25,8 @@ export class EntryService {
     private workshopRepository: Repository<Workshop>,
     @InjectRepository(UserUnit)
     private userUnitRepository: Repository<UserUnit>,
+    @InjectRepository(JobCard)
+    private jobCardRepository: Repository<JobCard>,
     private autoLogger: AutoLoggerService,
   ) {}
 
@@ -107,6 +110,17 @@ export class EntryService {
         reported_issues: createEntryDto.reported_issues,
       },
     });
+
+    // Auto-create placeholder job card for this entry
+    const jobCard = this.jobCardRepository.create({
+      entry_id: savedEntry.id,
+      user_unit_id: unit.id,
+      workshop_id: workshop.id,
+      inspector_id: user.id,
+      status: JobCardStatus.PENDING,
+      requested_quantity: 0,
+    });
+    await this.jobCardRepository.save(jobCard);
 
     return savedEntry;
   }

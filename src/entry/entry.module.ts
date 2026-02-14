@@ -5,11 +5,12 @@ import { EntryController } from './entry.controller';
 import { Entry } from '../entities/entry.entity';
 import { Workshop } from '../workshop/entities/workshop.entity';
 import { UserUnit } from '../user-unit/entities/user-unit.entity';
+import { JobCard } from '../entities/job-card.entity';
 import { LogBookModule } from '../log-book/log-book.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Entry, Workshop, UserUnit]),
+    TypeOrmModule.forFeature([Entry, Workshop, UserUnit, JobCard]),
     LogBookModule,
   ],
   controllers: [EntryController],

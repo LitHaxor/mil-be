@@ -47,10 +47,10 @@ export class JobCard {
   @JoinColumn({ name: 'workshop_id' })
   workshop: Workshop;
 
-  @Column()
+  @Column({ nullable: true })
   spare_part_id: string;
 
-  @ManyToOne(() => SparePartTemplate, { nullable: false })
+  @ManyToOne(() => SparePartTemplate, { nullable: true })
   @JoinColumn({ name: 'spare_part_id' })
   spare_part: SparePartTemplate;
 
