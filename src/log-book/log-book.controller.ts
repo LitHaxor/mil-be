@@ -16,7 +16,7 @@ export class LogBookController {
   constructor(private readonly logBookService: LogBookService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Create log entry', description: 'Create a new log entry for a user unit' })
   @ApiResponse({ status: 201, description: 'Log entry created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -26,7 +26,7 @@ export class LogBookController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all log entries', description: 'Retrieve all log entries, optionally filtered by user unit' })
   @ApiQuery({ name: 'userUnitId', required: false, description: 'Filter by user unit ID' })
   @ApiResponse({ status: 200, description: 'Returns list of log entries' })
@@ -36,7 +36,7 @@ export class LogBookController {
   }
 
   @Get('user-unit/:userUnitId')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get logs by user unit', description: 'Get all log entries for a specific user unit' })
   @ApiParam({ name: 'userUnitId', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'Returns list of log entries' })
@@ -46,7 +46,7 @@ export class LogBookController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get log entry by ID', description: 'Retrieve a specific log entry by ID' })
   @ApiParam({ name: 'id', description: 'Log entry ID' })
   @ApiResponse({ status: 200, description: 'Returns the log entry' })

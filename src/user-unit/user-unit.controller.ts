@@ -17,7 +17,7 @@ export class UserUnitController {
   constructor(private readonly userUnitService: UserUnitService) {}
 
   @Post()
-  @Roles(UserRole.INSPECTOR, UserRole.OC, UserRole.ADMIN)
+  @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
   @ApiOperation({ summary: 'Create user unit', description: 'Register a new user unit (weapon/vehicle)' })
   @ApiResponse({ status: 201, description: 'User unit created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -27,7 +27,7 @@ export class UserUnitController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all user units', description: 'Retrieve all user units, optionally filtered by workshop' })
   @ApiQuery({ name: 'workshopId', required: false, description: 'Filter by workshop ID' })
   @ApiResponse({ status: 200, description: 'Returns list of user units' })
@@ -37,7 +37,7 @@ export class UserUnitController {
   }
 
   @Get('workshop/:workshopId/in-workshop')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get units in workshop', description: 'Get all units currently in a specific workshop' })
   @ApiParam({ name: 'workshopId', description: 'Workshop ID' })
   @ApiResponse({ status: 200, description: 'Returns list of units in workshop' })
@@ -47,7 +47,7 @@ export class UserUnitController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get user unit by ID', description: 'Retrieve a specific user unit by ID' })
   @ApiParam({ name: 'id', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'Returns the user unit' })

@@ -26,7 +26,7 @@ export class InventoryController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all inventory items', description: 'Retrieve all inventory items, optionally filtered by workshop' })
   @ApiQuery({ name: 'workshopId', required: false, description: 'Filter by workshop ID' })
   @ApiResponse({ status: 200, description: 'Returns list of inventory items' })
@@ -46,7 +46,7 @@ export class InventoryController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get inventory item by ID', description: 'Retrieve a specific inventory item by ID' })
   @ApiParam({ name: 'id', description: 'Inventory item ID' })
   @ApiResponse({ status: 200, description: 'Returns the inventory item' })

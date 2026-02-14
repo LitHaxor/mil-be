@@ -120,7 +120,7 @@ export class WorkshopController {
   @ApiResponse({ status: 404, description: 'Workshop or user not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or OC only' })
-  assignRoles(@Param('id') id: string, @Body() assignRolesDto: AssignRolesDto, @Request() req) {
+  assignRoles(@Param('id') id: string, @Body() assignRolesDto: any, @Request() req) {
     return this.workshopService.assignRoles(id, assignRolesDto, req.user.id);
   }
 

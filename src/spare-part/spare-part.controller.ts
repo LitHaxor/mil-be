@@ -26,7 +26,7 @@ export class SparePartController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all spare parts', description: 'Retrieve all spare parts, optionally filtered by equipment type' })
   @ApiQuery({ name: 'equipmentType', required: false, description: 'Filter by equipment type' })
   @ApiResponse({ status: 200, description: 'Returns list of spare parts' })
@@ -36,7 +36,7 @@ export class SparePartController {
   }
 
   @Get('search')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Search spare parts', description: 'Search spare parts by name' })
   @ApiQuery({ name: 'name', required: true, description: 'Search term for spare part name' })
   @ApiResponse({ status: 200, description: 'Returns matching spare parts' })
@@ -46,7 +46,7 @@ export class SparePartController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get spare part by ID', description: 'Retrieve a specific spare part by ID' })
   @ApiParam({ name: 'id', description: 'Spare part ID' })
   @ApiResponse({ status: 200, description: 'Returns the spare part' })

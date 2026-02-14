@@ -12,43 +12,45 @@ import { Workshop } from '../workshop/entities/workshop.entity';
 export enum UserRole {
   ADMIN = 'admin',
   OC = 'oc',
-  INSPECTOR = 'inspector',
+  CAPTAIN = 'captain',
+  INSPECTOR_RI_AND_I = 'inspector_ri&i',
+  STORE_MAN = 'store_man',
 }
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column({ nullable: true })
-  full_name: string;
+  full_name?: string;
 
   @Column({ nullable: true })
-  avatar_url: string;
+  avatar_url?: string;
 
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.INSPECTOR,
+    default: UserRole.INSPECTOR_RI_AND_I,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @Column({ nullable: true })
-  workshop_id: string;
+  workshop_id?: string;
 
   @ManyToOne(() => Workshop, { nullable: true })
   @JoinColumn({ name: 'workshop_id' })
-  workshop: Workshop;
+  workshop?: Workshop;
 
   @Column({ default: true })
-  is_active: boolean;
+  is_active!: boolean;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

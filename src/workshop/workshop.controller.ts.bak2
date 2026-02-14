@@ -27,7 +27,7 @@ export class WorkshopController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
   @ApiOperation({ summary: 'Get all workshops', description: 'Retrieve all workshops (filtered by assignment for inspectors)' })
   @ApiResponse({ status: 200, description: 'Returns list of workshops' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -36,7 +36,7 @@ export class WorkshopController {
   }
 
   @Get(':id/analytics')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
   @ApiOperation({ summary: 'Get dashboard analytics', description: 'Get analytics data for dashboard charts' })
   @ApiParam({ name: 'id', description: 'Workshop ID' })
   @ApiResponse({ status: 200, description: 'Returns analytics data' })
@@ -67,7 +67,7 @@ export class WorkshopController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
   @ApiOperation({ summary: 'Get workshop by ID', description: 'Retrieve a specific workshop by ID' })
   @ApiParam({ name: 'id', description: 'Workshop ID' })
   @ApiResponse({ status: 200, description: 'Returns the workshop' })
@@ -120,7 +120,7 @@ export class WorkshopController {
   @ApiResponse({ status: 404, description: 'Workshop or user not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin or OC only' })
-  assignRoles(@Param('id') id: string, @Body() assignRolesDto: AssignRolesDto, @Request() req) {
+  assignRoles(@Param('id') id: string, @Body() assignRolesDto: any, @Request() req) {
     return this.workshopService.assignRoles(id, assignRolesDto, req.user.id);
   }
 

@@ -138,7 +138,7 @@ export class AuthService {
         ];
         break;
 
-      case UserRole.INSPECTOR:
+      case UserRole.INSPECTOR_RI_AND_I:
         permissions.pages = [
           'dashboard',
           'units',

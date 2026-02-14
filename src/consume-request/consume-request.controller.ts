@@ -17,7 +17,7 @@ export class ConsumeRequestController {
   constructor(private readonly consumeRequestService: ConsumeRequestService) {}
 
   @Post()
-  @Roles(UserRole.INSPECTOR, UserRole.OC, UserRole.ADMIN)
+  @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
   @ApiOperation({ summary: 'Create consume request', description: 'Create a request to consume spare parts for a unit' })
   @ApiResponse({ status: 201, description: 'Consume request created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -27,7 +27,7 @@ export class ConsumeRequestController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all consume requests', description: 'Retrieve all consume requests with optional filters' })
   @ApiQuery({ name: 'userUnitId', required: false, description: 'Filter by user unit ID' })
   @ApiQuery({ name: 'status', required: false, enum: RequestStatus, description: 'Filter by request status' })
@@ -51,7 +51,7 @@ export class ConsumeRequestController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get consume request by ID', description: 'Retrieve a specific consume request by ID' })
   @ApiParam({ name: 'id', description: 'Consume request ID' })
   @ApiResponse({ status: 200, description: 'Returns the consume request' })
