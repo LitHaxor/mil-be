@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 
-export class RejectJobCardDto {
+export class RejectJobCartDto {
   @ApiProperty({
     description: 'Rejection reason (required)',
     example: 'Part not essential for current repair, unnecessary expense',

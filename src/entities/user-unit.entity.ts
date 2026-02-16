@@ -48,6 +48,9 @@ export class UserUnit {
   @Column({ nullable: true })
   manufacturer: string;
 
+  @Column({ nullable: true })
+  unit: string;
+
   @Column('jsonb', { nullable: true })
   specifications: Record<string, any>;
 

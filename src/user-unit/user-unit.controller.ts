@@ -1,5 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { UserUnitService } from './user-unit.service';
 import { CreateUserUnitDto } from './dto/create-user-unit.dto';
 import { UpdateUserUnitDto } from './dto/update-user-unit.dto';
@@ -18,18 +37,31 @@ export class UserUnitController {
 
   @Post()
   @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Create user unit', description: 'Register a new user unit (weapon/vehicle)' })
+  @ApiOperation({
+    summary: 'Create user unit',
+    description: 'Register a new user unit (weapon/vehicle)',
+  })
   @ApiResponse({ status: 201, description: 'User unit created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
   create(@Body() createUserUnitDto: CreateUserUnitDto) {
     return this.userUnitService.create(createUserUnitDto);
   }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
-  @ApiOperation({ summary: 'Get all user units', description: 'Retrieve all user units, optionally filtered by workshop' })
-  @ApiQuery({ name: 'workshopId', required: false, description: 'Filter by workshop ID' })
+  @ApiOperation({
+    summary: 'Get all user units',
+    description: 'Retrieve all user units, optionally filtered by workshop',
+  })
+  @ApiQuery({
+    name: 'workshopId',
+    required: false,
+    description: 'Filter by workshop ID',
+  })
   @ApiResponse({ status: 200, description: 'Returns list of user units' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll(@Query('workshopId') workshopId?: string) {
@@ -38,9 +70,15 @@ export class UserUnitController {
 
   @Get('workshop/:workshopId/in-workshop')
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
-  @ApiOperation({ summary: 'Get units in workshop', description: 'Get all units currently in a specific workshop' })
+  @ApiOperation({
+    summary: 'Get units in workshop',
+    description: 'Get all units currently in a specific workshop',
+  })
   @ApiParam({ name: 'workshopId', description: 'Workshop ID' })
-  @ApiResponse({ status: 200, description: 'Returns list of units in workshop' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns list of units in workshop',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getInWorkshop(@Param('workshopId') workshopId: string) {
     return this.userUnitService.getInWorkshop(workshopId);
@@ -48,7 +86,10 @@ export class UserUnitController {
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
-  @ApiOperation({ summary: 'Get user unit by ID', description: 'Retrieve a specific user unit by ID' })
+  @ApiOperation({
+    summary: 'Get user unit by ID',
+    description: 'Retrieve a specific user unit by ID',
+  })
   @ApiParam({ name: 'id', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'Returns the user unit' })
   @ApiResponse({ status: 404, description: 'User unit not found' })
@@ -59,32 +100,95 @@ export class UserUnitController {
 
   @Patch(':id')
   @Roles(UserRole.OC, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update user unit', description: 'Update a user unit by ID' })
+  @ApiOperation({
+    summary: 'Update user unit',
+    description: 'Update a user unit by ID',
+  })
   @ApiParam({ name: 'id', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'User unit updated successfully' })
   @ApiResponse({ status: 404, description: 'User unit not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
-  update(@Param('id') id: string, @Body() updateUserUnitDto: UpdateUserUnitDto) {
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  update(
+    @Param('id') id: string,
+    @Body() updateUserUnitDto: UpdateUserUnitDto,
+  ) {
     return this.userUnitService.update(id, updateUserUnitDto);
   }
 
   @Patch(':id/status')
   @Roles(UserRole.OC, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update unit status', description: 'Update the status of a user unit' })
+  @ApiOperation({
+    summary: 'Update unit status',
+    description: 'Update the status of a user unit',
+  })
   @ApiParam({ name: 'id', description: 'User unit ID' })
-  @ApiBody({ schema: { properties: { status: { type: 'string', enum: Object.values(UnitStatus) } } } })
+  @ApiBody({
+    schema: {
+      properties: {
+        status: { type: 'string', enum: Object.values(UnitStatus) },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'Status updated successfully' })
   @ApiResponse({ status: 404, description: 'User unit not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
   updateStatus(@Param('id') id: string, @Body('status') status: UnitStatus) {
     return this.userUnitService.updateStatus(id, status);
   }
 
+  @Patch(':id/mark-completed')
+  @Roles(UserRole.STORE_MAN)
+  @ApiOperation({
+    summary: 'Mark unit as completed',
+    description:
+      'Store man marks unit as COMPLETED after finishing maintenance work',
+  })
+  @ApiParam({ name: 'id', description: 'User unit ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unit marked as COMPLETED successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Unit must be UNDER_MAINTENANCE' })
+  @ApiResponse({ status: 404, description: 'User unit not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Store man only' })
+  markAsCompleted(@Param('id') id: string, @Request() req) {
+    return this.userUnitService.markAsCompleted(id, req.user.id);
+  }
+
+  @Patch(':id/move-to-workshop')
+  @Roles(UserRole.INSPECTOR_RI_AND_I)
+  @ApiOperation({
+    summary: 'Move completed unit to in workshop',
+    description: 'Inspector moves COMPLETED unit back to IN_WORKSHOP status',
+  })
+  @ApiParam({ name: 'id', description: 'User unit ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unit moved to IN_WORKSHOP successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Unit must be COMPLETED' })
+  @ApiResponse({ status: 404, description: 'User unit not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Inspector only' })
+  moveToInWorkshop(@Param('id') id: string, @Request() req) {
+    return this.userUnitService.moveToInWorkshop(id, req.user.id);
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Delete user unit', description: 'Delete a user unit by ID' })
+  @ApiOperation({
+    summary: 'Delete user unit',
+    description: 'Delete a user unit by ID',
+  })
   @ApiParam({ name: 'id', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'User unit deleted successfully' })
   @ApiResponse({ status: 404, description: 'User unit not found' })

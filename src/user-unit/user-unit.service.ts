@@ -167,4 +167,50 @@ export class UserUnitService {
       },
     });
   }
+
+  async markAsCompleted(id: string, userId: string): Promise<UserUnit> {
+    const userUnit = await this.findOne(id);
+
+    if (userUnit.status !== UnitStatus.UNDER_MAINTENANCE) {
+      throw new NotFoundException(
+        'Unit must be UNDER_MAINTENANCE to mark as COMPLETED',
+      );
+    }
+
+    userUnit.status = UnitStatus.COMPLETED;
+    const saved = await this.userUnitRepository.save(userUnit);
+
+    // Auto-log status change
+    await this.logBookService.create({
+      user_unit_id: saved.id,
+      log_type: LogType.COMMENT,
+      description: `Unit "${saved.full_name_with_model}" (BA/Regt: ${saved.ba_regt_no}) marked as COMPLETED by store man`,
+      performed_by_id: userId,
+    });
+
+    return saved;
+  }
+
+  async moveToInWorkshop(id: string, userId: string): Promise<UserUnit> {
+    const userUnit = await this.findOne(id);
+
+    if (userUnit.status !== UnitStatus.COMPLETED) {
+      throw new NotFoundException(
+        'Unit must be COMPLETED to move to IN_WORKSHOP',
+      );
+    }
+
+    userUnit.status = UnitStatus.IN_WORKSHOP;
+    const saved = await this.userUnitRepository.save(userUnit);
+
+    // Auto-log status change
+    await this.logBookService.create({
+      user_unit_id: saved.id,
+      log_type: LogType.ENTRY,
+      description: `Unit "${saved.full_name_with_model}" (BA/Regt: ${saved.ba_regt_no}) moved to IN_WORKSHOP by inspector`,
+      performed_by_id: userId,
+    });
+
+    return saved;
+  }
 }

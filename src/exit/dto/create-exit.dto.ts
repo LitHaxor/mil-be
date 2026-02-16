@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID, IsOptional, IsNumber, IsString } from 'class-validator';
+import {
+  IsUUID,
+  IsOptional,
+  IsNumber,
+  IsString,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateExitDto {
   @ApiProperty({
@@ -8,6 +14,15 @@ export class CreateExitDto {
   })
   @IsUUID()
   entry_id: string;
+
+  @ApiProperty({
+    description:
+      'Unit/Battalion name (MANDATORY - e.g., 149F6 Wscp Coy, 1Fd, CM1)',
+    example: '149F6 Wscp Coy',
+  })
+  @IsNotEmpty()
+  @IsString()
+  unit: string;
 
   @ApiPropertyOptional({
     description: 'Odometer or hour meter reading at exit (in KM)',

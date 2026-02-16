@@ -17,6 +17,22 @@ export class CreateEntryDto {
   user_unit_id: string;
 
   @ApiPropertyOptional({
+    description: 'BA Number (Book Authorization Number)',
+    example: '21040',
+  })
+  @IsOptional()
+  @IsString()
+  ba_no?: string;
+
+  @ApiPropertyOptional({
+    description: 'Unit/Battalion name (e.g., 149F6 Wscp Coy, 1Fd, CM1)',
+    example: '149F6 Wscp Coy',
+  })
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @ApiPropertyOptional({
     description: 'Odometer or hour meter reading at entry (in KM)',
     example: 125000,
   })

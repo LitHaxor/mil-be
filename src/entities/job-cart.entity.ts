@@ -13,7 +13,7 @@ import { Workshop } from '../workshop/entities/workshop.entity';
 import { SparePartTemplate } from '../spare-part/entities/spare-part-template.entity';
 import { User } from './user.entity';
 
-export enum JobCardStatus {
+export enum JobCartStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   ISSUED = 'issued',
@@ -21,8 +21,8 @@ export enum JobCardStatus {
   OC_VETOED = 'oc_vetoed',
 }
 
-@Entity('job_cards')
-export class JobCard {
+@Entity('job_carts')
+export class JobCart {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -66,10 +66,10 @@ export class JobCard {
 
   @Column({
     type: 'enum',
-    enum: JobCardStatus,
-    default: JobCardStatus.PENDING,
+    enum: JobCartStatus,
+    default: JobCartStatus.PENDING,
   })
-  status: JobCardStatus;
+  status: JobCartStatus;
 
   // Approval tracking
   @Column({ nullable: true })

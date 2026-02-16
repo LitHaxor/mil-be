@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Exit } from '../entities/exit.entity';
 import { Entry } from '../entities/entry.entity';
+import { UserUnit, UnitStatus } from '../user-unit/entities/user-unit.entity';
 import { User, UserRole } from '../entities/user.entity';
 import { CreateExitDto } from './dto/create-exit.dto';
 import { AutoLoggerService } from '../log-book/services/auto-logger.service';
@@ -20,6 +21,8 @@ export class ExitService {
     private exitRepository: Repository<Exit>,
     @InjectRepository(Entry)
     private entryRepository: Repository<Entry>,
+    @InjectRepository(UserUnit)
+    private userUnitRepository: Repository<UserUnit>,
     private autoLogger: AutoLoggerService,
   ) {}
 
@@ -61,15 +64,23 @@ export class ExitService {
 
     const savedExit = await this.exitRepository.save(exit);
 
+    // Update user_unit's unit field (MANDATORY) and status to EXITED
+    await this.userUnitRepository.update(entry.user_unit_id, {
+      unit: createExitDto.unit,
+      status: UnitStatus.EXITED,
+      exited_at: new Date(),
+    });
+
     // Auto-log exit creation
     await this.autoLogger.log({
       logType: LogType.EXIT_CREATED,
       actorId: user.id,
-      description: `Exit created for unit ${entry.user_unit.full_name_with_model} (BA/Regt: ${entry.user_unit.ba_regt_no})`,
+      description: `Exit created for unit ${entry.user_unit.full_name_with_model} (BA/Regt: ${entry.user_unit.ba_regt_no}) - Unit: ${createExitDto.unit} - Status: EXITED`,
       workshopId: entry.workshop_id,
       userUnitId: entry.user_unit_id,
       entryId: entry.id,
       metadata: {
+        unit: createExitDto.unit,
         odometer_km: createExitDto.odometer_km,
         work_performed: createExitDto.work_performed,
       },

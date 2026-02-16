@@ -40,6 +40,10 @@ export class Entry {
   @JoinColumn({ name: 'inspector_id' })
   inspector: User;
 
+  // BA Number (Book Authorization Number)
+  @Column({ nullable: true })
+  ba_no: string;
+
   // Metadata fields
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   odometer_km: number;

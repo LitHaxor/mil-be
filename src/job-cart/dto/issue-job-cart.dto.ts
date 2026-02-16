@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
-export class IssueJobCardDto {
+export class IssueJobCartDto {
   @ApiPropertyOptional({
     description: 'Optional delivery/issue notes',
     example: 'Parts handed over to mechanic, signed receipt received',

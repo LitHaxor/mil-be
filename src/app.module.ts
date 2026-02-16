@@ -16,7 +16,7 @@ import { LogBook } from './log-book/entities/log-book.entity';
 import { ChatMessage } from './chat/entities/chat-message.entity';
 import { Entry } from './entities/entry.entity';
 import { Exit } from './entities/exit.entity';
-import { JobCard } from './entities/job-card.entity';
+import { JobCart } from './entities/job-cart.entity';
 import { WorkshopModule } from './workshop/workshop.module';
 import { UserUnitModule } from './user-unit/user-unit.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -28,7 +28,7 @@ import { ChatModule } from './chat/chat.module';
 import { UsersModule } from './users/users.module';
 import { EntryModule } from './entry/entry.module';
 import { ExitModule } from './exit/exit.module';
-import { JobCardModule } from './job-card/job-card.module';
+import { JobCartModule } from './job-cart/job-cart.module';
 
 @Module({
   imports: [
@@ -56,7 +56,7 @@ import { JobCardModule } from './job-card/job-card.module';
           ChatMessage,
           Entry,
           Exit,
-          JobCard,
+          JobCart,
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
       }),
@@ -75,7 +75,7 @@ import { JobCardModule } from './job-card/job-card.module';
     UsersModule,
     EntryModule,
     ExitModule,
-    JobCardModule,
+    JobCartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

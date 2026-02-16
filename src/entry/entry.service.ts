@@ -8,9 +8,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Entry } from '../entities/entry.entity';
 import { Workshop } from '../workshop/entities/workshop.entity';
-import { UserUnit } from '../user-unit/entities/user-unit.entity';
+import { UserUnit, UnitStatus } from '../user-unit/entities/user-unit.entity';
 import { User, UserRole } from '../entities/user.entity';
-import { JobCard, JobCardStatus } from '../entities/job-card.entity';
+import { JobCart, JobCartStatus } from '../entities/job-cart.entity';
 import { CreateEntryDto } from './dto/create-entry.dto';
 import { UpdateEntryDto } from './dto/update-entry.dto';
 import { AutoLoggerService } from '../log-book/services/auto-logger.service';
@@ -25,8 +25,8 @@ export class EntryService {
     private workshopRepository: Repository<Workshop>,
     @InjectRepository(UserUnit)
     private userUnitRepository: Repository<UserUnit>,
-    @InjectRepository(JobCard)
-    private jobCardRepository: Repository<JobCard>,
+    @InjectRepository(JobCart)
+    private jobCartRepository: Repository<JobCart>,
     private autoLogger: AutoLoggerService,
   ) {}
 
@@ -97,30 +97,29 @@ export class EntryService {
 
     const savedEntry = await this.entryRepository.save(entry);
 
+    // Update user_unit fields and status to IN_WORKSHOP
+    await this.userUnitRepository.update(unit.id, {
+      present_km: createEntryDto.odometer_km || unit.present_km,
+      unit: createEntryDto.unit || unit.unit,
+      status: UnitStatus.IN_WORKSHOP,
+      entered_at: new Date(),
+    });
+
     // Auto-log entry creation
     await this.autoLogger.log({
       logType: LogType.ENTRY_CREATED,
       actorId: user.id,
-      description: `Entry created for unit ${unit.full_name_with_model} (BA/Regt: ${unit.ba_regt_no})`,
+      description: `Entry created for unit ${unit.full_name_with_model} (BA/Regt: ${unit.ba_regt_no}) - Status: IN WORKSHOP`,
       workshopId: workshop.id,
       userUnitId: unit.id,
       entryId: savedEntry.id,
       metadata: {
+        ba_no: createEntryDto.ba_no,
         odometer_km: createEntryDto.odometer_km,
+        unit: createEntryDto.unit,
         reported_issues: createEntryDto.reported_issues,
       },
     });
-
-    // Auto-create placeholder job card for this entry
-    const jobCard = this.jobCardRepository.create({
-      entry_id: savedEntry.id,
-      user_unit_id: unit.id,
-      workshop_id: workshop.id,
-      inspector_id: user.id,
-      status: JobCardStatus.PENDING,
-      requested_quantity: 0,
-    });
-    await this.jobCardRepository.save(jobCard);
 
     return savedEntry;
   }
