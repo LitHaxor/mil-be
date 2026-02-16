@@ -101,7 +101,7 @@ export class EntryService {
     await this.autoLogger.log({
       logType: LogType.ENTRY_CREATED,
       actorId: user.id,
-      description: `Entry created for unit ${unit.name} (${unit.unit_number})`,
+      description: `Entry created for unit ${unit.full_name_with_model} (BA/Regt: ${unit.ba_regt_no})`,
       workshopId: workshop.id,
       userUnitId: unit.id,
       entryId: savedEntry.id,
@@ -221,7 +221,7 @@ export class EntryService {
     await this.autoLogger.log({
       logType: LogType.ENTRY_UPDATED,
       actorId: user.id,
-      description: `Entry updated for unit ${entry.user_unit.name}`,
+      description: `Entry updated for unit ${entry.user_unit.full_name_with_model}`,
       workshopId: entry.workshop_id,
       userUnitId: entry.user_unit_id,
       entryId: entry.id,

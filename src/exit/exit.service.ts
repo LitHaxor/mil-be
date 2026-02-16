@@ -65,7 +65,7 @@ export class ExitService {
     await this.autoLogger.log({
       logType: LogType.EXIT_CREATED,
       actorId: user.id,
-      description: `Exit created for unit ${entry.user_unit.name} (${entry.user_unit.unit_number})`,
+      description: `Exit created for unit ${entry.user_unit.full_name_with_model} (BA/Regt: ${entry.user_unit.ba_regt_no})`,
       workshopId: entry.workshop_id,
       userUnitId: entry.user_unit_id,
       entryId: entry.id,

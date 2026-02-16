@@ -30,26 +30,53 @@ export class UserUnit {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  name: string;
+  @Column({ type: 'integer', generated: 'increment', nullable: true })
+  ser: number;
 
-  @Column({ unique: true })
-  unit_number: string;
+  @Column({ type: 'integer', unique: true, nullable: true })
+  ba_regt_no: number;
+
+  @Column({ type: 'text', nullable: true })
+  full_name_with_model: string;
+
+  @Column({ type: 'text', nullable: true })
+  country_of_origin: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  issue_date: Date;
+
+  @Column({ type: 'integer', nullable: true })
+  present_km: number;
+
+  @Column({ type: 'text', nullable: true })
+  present_age: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  overhauling_date: Date;
+
+  @Column({ type: 'text', nullable: true })
+  ci: string;
+
+  @Column({ type: 'integer', nullable: true })
+  auth: number;
+
+  @Column({ type: 'integer', nullable: true })
+  held: number;
+
+  @Column({ type: 'text', nullable: true })
+  unit: string;
+
+  @Column({ type: 'text', nullable: true })
+  maint_wksp: string;
+
+  @Column({ type: 'text', nullable: true })
+  rmk: string;
 
   @Column({
     type: 'enum',
     enum: UnitType,
   })
   unit_type: UnitType;
-
-  @Column({ nullable: true })
-  model: string;
-
-  @Column({ nullable: true })
-  manufacturer: string;
-
-  @Column('jsonb', { nullable: true })
-  specifications: Record<string, any>;
 
   @Column({
     type: 'enum',

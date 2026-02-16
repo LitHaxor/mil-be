@@ -27,7 +27,7 @@ export class UserUnitService {
     await this.logBookService.create({
       user_unit_id: saved.id,
       log_type: LogType.ENTRY,
-      description: `Unit "${saved.name}" (${saved.unit_number}) entered workshop`,
+      description: `Unit "${saved.full_name_with_model}" (BA/Regt: ${saved.ba_regt_no}) entered workshop`,
     });
 
     return saved;
@@ -59,12 +59,18 @@ export class UserUnitService {
     return userUnit;
   }
 
-  async update(id: string, updateUserUnitDto: UpdateUserUnitDto): Promise<UserUnit> {
+  async update(
+    id: string,
+    updateUserUnitDto: UpdateUserUnitDto,
+  ): Promise<UserUnit> {
     const userUnit = await this.findOne(id);
     const previousStatus = userUnit.status;
 
     // Handle status-related timestamps
-    if (updateUserUnitDto.status && updateUserUnitDto.status !== userUnit.status) {
+    if (
+      updateUserUnitDto.status &&
+      updateUserUnitDto.status !== userUnit.status
+    ) {
       if (updateUserUnitDto.status === UnitStatus.EXITED) {
         userUnit.exited_at = new Date();
       } else if (updateUserUnitDto.status === UnitStatus.UNDER_MAINTENANCE) {
@@ -76,7 +82,10 @@ export class UserUnitService {
     const saved = await this.userUnitRepository.save(userUnit);
 
     // Auto-log status changes
-    if (updateUserUnitDto.status && updateUserUnitDto.status !== previousStatus) {
+    if (
+      updateUserUnitDto.status &&
+      updateUserUnitDto.status !== previousStatus
+    ) {
       await this.autoLogStatusChange(saved, updateUserUnitDto.status);
     }
 
@@ -104,26 +113,29 @@ export class UserUnitService {
     return saved;
   }
 
-  private async autoLogStatusChange(userUnit: UserUnit, newStatus: UnitStatus): Promise<void> {
+  private async autoLogStatusChange(
+    userUnit: UserUnit,
+    newStatus: UnitStatus,
+  ): Promise<void> {
     let logType: LogType;
     let description: string;
 
     switch (newStatus) {
       case UnitStatus.EXITED:
         logType = LogType.EXIT;
-        description = `Unit "${userUnit.name}" (${userUnit.unit_number}) exited workshop`;
+        description = `Unit "${userUnit.full_name_with_model}" (BA/Regt: ${userUnit.ba_regt_no}) exited workshop`;
         break;
       case UnitStatus.UNDER_MAINTENANCE:
         logType = LogType.MAINTENANCE;
-        description = `Unit "${userUnit.name}" (${userUnit.unit_number}) placed under maintenance`;
+        description = `Unit "${userUnit.full_name_with_model}" (BA/Regt: ${userUnit.ba_regt_no}) placed under maintenance`;
         break;
       case UnitStatus.IN_WORKSHOP:
         logType = LogType.ENTRY;
-        description = `Unit "${userUnit.name}" (${userUnit.unit_number}) status changed to in workshop`;
+        description = `Unit "${userUnit.full_name_with_model}" (BA/Regt: ${userUnit.ba_regt_no}) status changed to in workshop`;
         break;
       case UnitStatus.COMPLETED:
         logType = LogType.COMMENT;
-        description = `Unit "${userUnit.name}" (${userUnit.unit_number}) marked as completed`;
+        description = `Unit "${userUnit.full_name_with_model}" (BA/Regt: ${userUnit.ba_regt_no}) marked as completed`;
         break;
       default:
         return;
