@@ -3,9 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Exit } from '../entities/exit.entity';
 import { Entry } from '../entities/entry.entity';
 import { UserUnit, UnitStatus } from '../user-unit/entities/user-unit.entity';
@@ -24,6 +25,7 @@ export class ExitService {
     @InjectRepository(UserUnit)
     private userUnitRepository: Repository<UserUnit>,
     private autoLogger: AutoLoggerService,
+    private dataSource: DataSource,
   ) {}
 
   async create(createExitDto: CreateExitDto, user: User): Promise<Exit> {
@@ -56,37 +58,117 @@ export class ExitService {
       );
     }
 
-    // Create exit
-    const exit = this.exitRepository.create({
-      ...createExitDto,
-      inspector_id: user.id,
-    });
+    // Use transaction to ensure atomicity - all operations succeed or all fail
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const savedExit = await this.exitRepository.save(exit);
+    try {
+      // Create exit within transaction
+      const exit = this.exitRepository.create({
+        ...createExitDto,
+        inspector_id: user.id,
+      });
 
-    // Update user_unit's unit field (MANDATORY) and status to EXITED
-    await this.userUnitRepository.update(entry.user_unit_id, {
-      unit: createExitDto.unit,
-      status: UnitStatus.EXITED,
-      exited_at: new Date(),
-    });
+      const savedExit = await queryRunner.manager.save(exit);
 
-    // Auto-log exit creation
-    await this.autoLogger.log({
-      logType: LogType.EXIT_CREATED,
-      actorId: user.id,
-      description: `Exit created for unit ${entry.user_unit.full_name_with_model} (BA/Regt: ${entry.user_unit.ba_regt_no}) - Unit: ${createExitDto.unit} - Status: EXITED`,
-      workshopId: entry.workshop_id,
-      userUnitId: entry.user_unit_id,
-      entryId: entry.id,
-      metadata: {
-        unit: createExitDto.unit,
-        odometer_km: createExitDto.odometer_km,
-        work_performed: createExitDto.work_performed,
-      },
-    });
+      // Get current user_unit with workshop_history
+      const userUnit = await queryRunner.manager.findOne(UserUnit, {
+        where: { id: entry.user_unit_id },
+      });
 
-    return savedExit;
+      // Update workshop_history with exit time
+      const workshopHistory = userUnit?.workshop_history || [];
+      const lastHistory = workshopHistory[workshopHistory.length - 1];
+      if (lastHistory && lastHistory.entry_id === entry.id) {
+        lastHistory.exited_at = new Date();
+      }
+
+      // Update user_unit: clear active_workshop, set status to EXITED, update history
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(UserUnit)
+        .set({
+          unit: createExitDto.unit,
+          status: UnitStatus.EXITED,
+          active_workshop_id: () => 'NULL',
+          exited_at: new Date(),
+          workshop_history: workshopHistory,
+        })
+        .where('id = :id', { id: entry.user_unit_id })
+        .execute();
+
+      // Verify the exit was created and linked properly
+      const verifyEntry = await queryRunner.manager.findOne(Entry, {
+        where: { id: createExitDto.entry_id },
+        relations: ['exit'],
+      });
+
+      if (!verifyEntry?.exit) {
+        throw new InternalServerErrorException(
+          'Failed to establish entry-exit relationship',
+        );
+      }
+
+      // Verify user_unit status was updated
+      const verifyUserUnit = await queryRunner.manager.findOne(UserUnit, {
+        where: { id: entry.user_unit_id },
+      });
+
+      if (verifyUserUnit?.status !== UnitStatus.EXITED) {
+        throw new InternalServerErrorException(
+          'Failed to update user_unit status to EXITED',
+        );
+      }
+
+      if (verifyUserUnit?.active_workshop_id !== null) {
+        throw new InternalServerErrorException(
+          'Failed to clear active_workshop_id',
+        );
+      }
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Auto-log exit creation (after transaction succeeds)
+      await this.autoLogger.log({
+        logType: LogType.EXIT_CREATED,
+        actorId: user.id,
+        description: `Exit created for unit ${entry.user_unit.full_name_with_model} (BA/Regt: ${entry.user_unit.ba_regt_no}) from Workshop: ${entry.workshop.name} - Unit: ${createExitDto.unit} - Status: EXITED`,
+        workshopId: entry.workshop_id,
+        userUnitId: entry.user_unit_id,
+        entryId: entry.id,
+        metadata: {
+          workshop_name: entry.workshop.name,
+          unit: createExitDto.unit,
+          odometer_km: createExitDto.odometer_km,
+          work_performed: createExitDto.work_performed,
+          exit_condition_notes: createExitDto.exit_condition_notes,
+          exited_at: savedExit.exited_at,
+        },
+      });
+
+      // Return the saved exit with full relations
+      const exitWithRelations = await this.exitRepository.findOne({
+        where: { id: savedExit.id },
+        relations: ['entry', 'entry.workshop', 'entry.user_unit', 'inspector'],
+      });
+
+      if (!exitWithRelations) {
+        throw new InternalServerErrorException(
+          'Failed to retrieve created exit',
+        );
+      }
+
+      return exitWithRelations;
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      // Release query runner
+      await queryRunner.release();
+    }
   }
 
   async findAll(

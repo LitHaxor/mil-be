@@ -7,6 +7,9 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  BeforeInsert,
+  BeforeUpdate,
+  AfterLoad,
 } from 'typeorm';
 import { Workshop } from '../../workshop/entities/workshop.entity';
 import { LogBook } from '../../log-book/entities/log-book.entity';
@@ -23,6 +26,7 @@ export enum UnitStatus {
   UNDER_MAINTENANCE = 'under_maintenance',
   COMPLETED = 'completed',
   EXITED = 'exited',
+  AVAILABLE = 'available',
 }
 
 @Entity('user_units')
@@ -49,7 +53,7 @@ export class UserUnit {
   present_km: number;
 
   @Column({ type: 'text', nullable: true })
-  present_age: string;
+  present_age: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
   overhauling_date: Date;
@@ -81,16 +85,36 @@ export class UserUnit {
   @Column({
     type: 'enum',
     enum: UnitStatus,
-    default: UnitStatus.IN_WORKSHOP,
+    default: UnitStatus.AVAILABLE,
   })
   status: UnitStatus;
 
+  // Root/Assigned workshop (permanent assignment)
   @Column({ nullable: true })
   workshop_id: string;
 
   @ManyToOne(() => Workshop, (workshop) => workshop.user_units)
   @JoinColumn({ name: 'workshop_id' })
   workshop: Workshop;
+
+  // Currently active workshop (where vehicle is now)
+  @Column({ nullable: true })
+  active_workshop_id: string;
+
+  @ManyToOne(() => Workshop)
+  @JoinColumn({ name: 'active_workshop_id' })
+  active_workshop: Workshop;
+
+  // Workshop history - JSON array of {workshop_id, entered_at, exited_at}
+  @Column({ type: 'jsonb', nullable: true, default: [] })
+  workshop_history: Array<{
+    workshop_id: string;
+    workshop_name?: string;
+    entry_id?: string;
+    ba_no?: string;
+    entered_at: Date;
+    exited_at?: Date;
+  }>;
 
   @OneToMany(() => LogBook, (log) => log.user_unit)
   log_books: LogBook[];
@@ -112,4 +136,58 @@ export class UserUnit {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  /**
+   * Calculate age from issue_date automatically
+   */
+  private calculateAge(): string | null {
+    if (!this.issue_date) {
+      return null;
+    }
+
+    const issueDate = new Date(this.issue_date);
+    const currentDate = new Date();
+
+    let years = currentDate.getFullYear() - issueDate.getFullYear();
+    let months = currentDate.getMonth() - issueDate.getMonth();
+
+    // Adjust if current month is before issue month
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    // Format: "06 Yr 11 Month" or "06 Yr 0 Month"
+    return `${String(years).padStart(2, '0')} Yr ${months} Month`;
+  }
+
+  /**
+   * Auto-calculate present_age before inserting
+   */
+  @BeforeInsert()
+  setAgeBeforeInsert() {
+    if (this.issue_date) {
+      this.present_age = this.calculateAge();
+    }
+  }
+
+  /**
+   * Auto-calculate present_age before updating
+   */
+  @BeforeUpdate()
+  setAgeBeforeUpdate() {
+    if (this.issue_date) {
+      this.present_age = this.calculateAge();
+    }
+  }
+
+  /**
+   * Auto-calculate present_age after loading from database
+   */
+  @AfterLoad()
+  setAgeAfterLoad() {
+    if (this.issue_date) {
+      this.present_age = this.calculateAge();
+    }
+  }
 }

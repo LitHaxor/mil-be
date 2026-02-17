@@ -133,6 +133,8 @@ export class AuthService {
             canDelete: true,
             canView: true,
           },
+          exits: { canCreate: true, canView: true, canDelete: true },
+          jobCarts: { canCreate: true, canView: true, canDelete: true },
           consumeRequests: {
             canCreate: true,
             canApprove: true,
@@ -159,6 +161,7 @@ export class AuthService {
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
+          { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
           {
             label: 'Workshops',
             path: '/dashboard/workshops',
@@ -196,6 +199,8 @@ export class AuthService {
             canDelete: false,
             canView: true,
           },
+          exits: { canCreate: true, canView: true },
+          jobCarts: { canCreate: true, canView: true },
           consumeRequests: {
             canCreate: true,
             canApprove: true,
@@ -222,6 +227,7 @@ export class AuthService {
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
+          { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
         ];
         break;
 
@@ -229,7 +235,7 @@ export class AuthService {
         permissions.pages = ['dashboard', 'units', 'inventory', 'entries'];
         permissions.features = {
           units: {
-            canCreate: true,
+            canCreate: false,
             canEdit: false,
             canDelete: false,
             canView: true,
@@ -242,6 +248,8 @@ export class AuthService {
             canAdjust: false,
           },
           entries: { canCreate: true, canView: true },
+          exits: { canCreate: true, canView: true },
+          jobCarts: { canCreate: true, canView: true },
           consumeRequests: {
             canCreate: true,
             canApprove: false,
@@ -262,6 +270,7 @@ export class AuthService {
           { label: 'Entry', path: '/dashboard/entries', icon: 'ClipboardList' },
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
+          { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
         ];
         break;
     }

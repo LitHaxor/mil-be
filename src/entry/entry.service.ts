@@ -97,23 +97,35 @@ export class EntryService {
 
     const savedEntry = await this.entryRepository.save(entry);
 
-    // Update user_unit fields and status to IN_WORKSHOP
+    // Update user_unit: set active_workshop, status, and add to workshop_history
+    const workshopHistory = unit.workshop_history || [];
+    workshopHistory.push({
+      workshop_id: workshop.id,
+      workshop_name: workshop.name,
+      entry_id: savedEntry.id,
+      ba_no: createEntryDto.ba_no,
+      entered_at: new Date(),
+    });
+
     await this.userUnitRepository.update(unit.id, {
       present_km: createEntryDto.odometer_km || unit.present_km,
       unit: createEntryDto.unit || unit.unit,
       status: UnitStatus.IN_WORKSHOP,
+      active_workshop_id: workshop.id,
       entered_at: new Date(),
+      workshop_history: workshopHistory,
     });
 
     // Auto-log entry creation
     await this.autoLogger.log({
       logType: LogType.ENTRY_CREATED,
       actorId: user.id,
-      description: `Entry created for unit ${unit.full_name_with_model} (BA/Regt: ${unit.ba_regt_no}) - Status: IN WORKSHOP`,
+      description: `Entry created for unit ${unit.full_name_with_model} (BA/Regt: ${unit.ba_regt_no}) at Workshop: ${workshop.name} - Status: IN WORKSHOP`,
       workshopId: workshop.id,
       userUnitId: unit.id,
       entryId: savedEntry.id,
       metadata: {
+        workshop_name: workshop.name,
         ba_no: createEntryDto.ba_no,
         odometer_km: createEntryDto.odometer_km,
         unit: createEntryDto.unit,

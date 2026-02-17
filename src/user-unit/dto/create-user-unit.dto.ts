@@ -73,15 +73,6 @@ export class CreateUserUnitDto {
   present_km?: number;
 
   @ApiProperty({
-    description: 'Present age (year & month format)',
-    example: '06 Yr 11 Month',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  present_age?: string;
-
-  @ApiProperty({
     description: 'Overhauling date',
     example: '2024-01-15',
     required: false,

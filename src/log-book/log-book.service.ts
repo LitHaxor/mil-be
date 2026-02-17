@@ -4,12 +4,18 @@ import { Repository } from 'typeorm';
 import { CreateLogBookDto } from './dto/create-log-book.dto';
 import { UpdateLogBookDto } from './dto/update-log-book.dto';
 import { LogBook } from './entities/log-book.entity';
+import { UserUnit } from '../user-unit/entities/user-unit.entity';
+import { Workshop } from '../workshop/entities/workshop.entity';
 
 @Injectable()
 export class LogBookService {
   constructor(
     @InjectRepository(LogBook)
     private logBookRepository: Repository<LogBook>,
+    @InjectRepository(UserUnit)
+    private userUnitRepository: Repository<UserUnit>,
+    @InjectRepository(Workshop)
+    private workshopRepository: Repository<Workshop>,
   ) {}
 
   async create(createLogBookDto: CreateLogBookDto): Promise<LogBook> {
@@ -41,7 +47,10 @@ export class LogBookService {
     return log;
   }
 
-  async update(id: string, updateLogBookDto: UpdateLogBookDto): Promise<LogBook> {
+  async update(
+    id: string,
+    updateLogBookDto: UpdateLogBookDto,
+  ): Promise<LogBook> {
     const log = await this.findOne(id);
     Object.assign(log, updateLogBookDto);
     return await this.logBookRepository.save(log);
@@ -53,5 +62,36 @@ export class LogBookService {
 
   async getLogsByUserUnit(userUnitId: string): Promise<LogBook[]> {
     return await this.findAll(userUnitId);
+  }
+
+  async getWorkshopHistory(userUnitId: string): Promise<any> {
+    const userUnit = await this.userUnitRepository.findOne({
+      where: { id: userUnitId },
+      select: ['workshop_history', 'id'],
+    });
+
+    if (!userUnit) {
+      throw new NotFoundException(`UserUnit with ID ${userUnitId} not found`);
+    }
+
+    const workshopHistory = userUnit.workshop_history || [];
+
+    // Enrich workshop history with workshop names if not already present
+    const enrichedHistory = await Promise.all(
+      workshopHistory.map(async (history) => {
+        if (!history.workshop_name && history.workshop_id) {
+          const workshop = await this.workshopRepository.findOne({
+            where: { id: history.workshop_id },
+            select: ['name', 'id'],
+          });
+          if (workshop) {
+            history.workshop_name = workshop.name;
+          }
+        }
+        return history;
+      }),
+    );
+
+    return enrichedHistory;
   }
 }

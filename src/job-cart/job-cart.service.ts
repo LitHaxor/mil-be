@@ -117,6 +117,7 @@ export class JobCartService {
     const queryBuilder = this.jobCartRepository
       .createQueryBuilder('job_cart')
       .leftJoinAndSelect('job_cart.entry', 'entry')
+      .leftJoinAndSelect('entry.user_unit', 'entry_user_unit')
       .leftJoinAndSelect('job_cart.workshop', 'workshop')
       .leftJoinAndSelect('job_cart.user_unit', 'user_unit')
       .leftJoinAndSelect('job_cart.spare_part', 'spare_part')
@@ -192,6 +193,7 @@ export class JobCartService {
       where: { id },
       relations: [
         'entry',
+        'entry.user_unit',
         'workshop',
         'user_unit',
         'spare_part',
