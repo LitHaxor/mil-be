@@ -1,4 +1,11 @@
-import { IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsUUID,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateConsumeRequestDto {
@@ -34,6 +41,15 @@ export class CreateConsumeRequestDto {
   @IsUUID()
   @IsNotEmpty()
   requested_by_id: string;
+
+  @ApiProperty({
+    description: 'Job cart ID this request is related to (optional)',
+    example: '880e8400-e29b-41d4-a716-446655440000',
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  job_cart_id?: string;
 
   @ApiProperty({
     description: 'Additional notes about the request',

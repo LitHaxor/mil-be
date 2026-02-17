@@ -11,6 +11,10 @@ import { Entry } from '../entities/entry.entity';
 import { Inventory } from '../inventory/entities/inventory.entity';
 import { UserUnit, UnitStatus } from '../user-unit/entities/user-unit.entity';
 import { User, UserRole } from '../entities/user.entity';
+import {
+  ConsumeRequest,
+  RequestStatus,
+} from '../consume-request/entities/consume-request.entity';
 import { CreateJobCartDto } from './dto/create-job-cart.dto';
 import { ApproveJobCartDto } from './dto/approve-job-cart.dto';
 import { RejectJobCartDto } from './dto/reject-job-cart.dto';
@@ -29,6 +33,8 @@ export class JobCartService {
     private inventoryRepository: Repository<Inventory>,
     @InjectRepository(UserUnit)
     private userUnitRepository: Repository<UserUnit>,
+    @InjectRepository(ConsumeRequest)
+    private consumeRequestRepository: Repository<ConsumeRequest>,
     private dataSource: DataSource,
     private autoLogger: AutoLoggerService,
   ) {}
@@ -59,7 +65,7 @@ export class JobCartService {
       );
     }
 
-    // Create job cart with ISSUED status (no approval needed)
+    // Create job cart with PENDING status (will be picked up by store man)
     const jobCart = this.jobCartRepository.create({
       entry_id: createJobCartDto.entry_id,
       spare_part_id: createJobCartDto.spare_part_id,
@@ -68,9 +74,7 @@ export class JobCartService {
       user_unit_id: entry.user_unit_id,
       workshop_id: entry.workshop_id,
       inspector_id: user.id,
-      status: JobCartStatus.ISSUED,
-      issued_by_id: user.id,
-      issued_at: new Date(),
+      status: JobCartStatus.PENDING,
     });
 
     const savedJobCart = await this.jobCartRepository.save(jobCart);
@@ -80,11 +84,42 @@ export class JobCartService {
       status: UnitStatus.UNDER_MAINTENANCE,
     });
 
-    // Auto-log creation and issuance
+    // If spare parts are needed, create consume request
+    if (createJobCartDto.spare_part_id && createJobCartDto.requested_quantity) {
+      const consumeRequest = this.consumeRequestRepository.create({
+        user_unit_id: entry.user_unit_id,
+        spare_part_id: createJobCartDto.spare_part_id,
+        requested_quantity: createJobCartDto.requested_quantity,
+        requested_by_id: user.id,
+        status: RequestStatus.PENDING,
+        notes:
+          createJobCartDto.notes ||
+          `Auto-created from job cart #${savedJobCart.id.substring(0, 8)}`,
+      });
+
+      await this.consumeRequestRepository.save(consumeRequest);
+
+      // Log consume request creation
+      await this.autoLogger.log({
+        logType: LogType.COMMENT,
+        actorId: user.id,
+        description: `Spare parts requested: ${createJobCartDto.requested_quantity}x units (Job Cart: #${savedJobCart.id.substring(0, 8)}) - Pending storeman approval`,
+        workshopId: entry.workshop_id,
+        userUnitId: entry.user_unit_id,
+        metadata: {
+          spare_part_id: createJobCartDto.spare_part_id,
+          requested_quantity: createJobCartDto.requested_quantity,
+          consume_request_id: consumeRequest.id,
+          job_cart_id: savedJobCart.id,
+        },
+      });
+    }
+
+    // Auto-log creation
     await this.autoLogger.log({
-      logType: LogType.JOB_CARD_ISSUED,
+      logType: LogType.JOB_CARD_CREATED,
       actorId: user.id,
-      description: `Job cart created and auto-issued${createJobCartDto.spare_part_id ? ` for ${createJobCartDto.requested_quantity || 0}x parts` : ''} - Unit status: UNDER MAINTENANCE`,
+      description: `Job cart created${createJobCartDto.spare_part_id ? ` for ${createJobCartDto.requested_quantity || 0}x parts` : ''} - Unit status: UNDER MAINTENANCE`,
       workshopId: entry.workshop_id,
       userUnitId: entry.user_unit_id,
       entryId: entry.id,
@@ -124,7 +159,12 @@ export class JobCartService {
       .leftJoinAndSelect('job_cart.inspector', 'inspector')
       .leftJoinAndSelect('job_cart.approved_by', 'approved_by')
       .leftJoinAndSelect('job_cart.rejected_by', 'rejected_by')
-      .leftJoinAndSelect('job_cart.issued_by', 'issued_by');
+      .leftJoinAndSelect('job_cart.issued_by', 'issued_by')
+      .leftJoinAndSelect('job_cart.consume_requests', 'consume_requests')
+      .leftJoinAndSelect(
+        'consume_requests.spare_part',
+        'consume_request_spare_part',
+      );
 
     // Authorization based on role
     if (user.role === UserRole.INSPECTOR_RI_AND_I && user.workshop_id) {
@@ -605,6 +645,84 @@ export class JobCartService {
       jobCardId: jobCart.id,
       metadata: {
         notes: issueDto.notes,
+      },
+    });
+
+    return savedJobCart;
+  }
+
+  async complete(
+    id: string,
+    completeDto: { notes?: string },
+    user: User,
+  ): Promise<JobCart> {
+    // Verify user is store_man
+    if (user.role !== UserRole.STORE_MAN) {
+      throw new ForbiddenException(
+        'Only store managers can complete job carts',
+      );
+    }
+
+    const jobCart = await this.jobCartRepository.findOne({
+      where: { id },
+      relations: ['workshop', 'user_unit', 'entry'],
+    });
+
+    if (!jobCart) {
+      throw new NotFoundException('Job cart not found');
+    }
+
+    // Verify user is assigned to the workshop
+    if (jobCart.workshop.store_man_id !== user.id) {
+      throw new ForbiddenException(
+        'You are not assigned as store manager for this workshop',
+      );
+    }
+
+    // Verify status is PENDING, APPROVED or ISSUED (store man can complete from any of these)
+    if (
+      jobCart.status !== JobCartStatus.PENDING &&
+      jobCart.status !== JobCartStatus.APPROVED &&
+      jobCart.status !== JobCartStatus.ISSUED
+    ) {
+      throw new BadRequestException(
+        `Can only complete PENDING, APPROVED or ISSUED job carts. Current status: ${jobCart.status}`,
+      );
+    }
+
+    // Check for pending consume requests related to this job cart
+    const pendingConsumeRequests = await this.consumeRequestRepository.find({
+      where: {
+        job_cart_id: id,
+        status: RequestStatus.PENDING,
+      },
+    });
+
+    if (pendingConsumeRequests.length > 0) {
+      throw new BadRequestException(
+        `Cannot complete job cart. There are ${pendingConsumeRequests.length} pending consume request(s) that must be approved or rejected first.`,
+      );
+    }
+
+    // Update job cart
+    jobCart.status = JobCartStatus.COMPLETED;
+    if (completeDto.notes) {
+      jobCart.notes = completeDto.notes;
+    }
+
+    const savedJobCart = await this.jobCartRepository.save(jobCart);
+
+    // Auto-log completion
+    await this.autoLogger.log({
+      logType: LogType.JOB_CARD_COMPLETED,
+      actorId: user.id,
+      description: 'Job cart marked as completed by store manager',
+      workshopId: jobCart.workshop_id,
+      userUnitId: jobCart.user_unit_id,
+      entryId: jobCart.entry_id,
+      jobCardId: jobCart.id,
+      metadata: {
+        notes: completeDto.notes,
       },
     });
 

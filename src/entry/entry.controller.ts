@@ -45,7 +45,8 @@ export class EntryController {
   @ApiResponse({ status: 201, description: 'Entry created successfully' })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Unit already has active entry or workshop not ready',
+    description:
+      'Bad Request - Unit already has active entry or workshop not ready',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
@@ -62,6 +63,7 @@ export class EntryController {
     UserRole.OC,
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
+    UserRole.STORE_MAN,
   )
   @ApiOperation({
     summary: 'Get all entries',
@@ -86,7 +88,10 @@ export class EntryController {
   })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
-  @ApiResponse({ status: 200, description: 'Returns paginated list of entries' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of entries',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll(
     @Query('workshop_id') workshop_id?: string,

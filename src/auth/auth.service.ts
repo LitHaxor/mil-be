@@ -252,8 +252,8 @@ export class AuthService {
           jobCarts: { canCreate: true, canView: true },
           consumeRequests: {
             canCreate: true,
-            canApprove: false,
-            canReject: false,
+            canApprove: true,
+            canReject: true,
             canView: true,
             canDelete: false,
           },
@@ -271,6 +271,60 @@ export class AuthService {
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
           { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
+        ];
+        break;
+
+      case UserRole.STORE_MAN:
+        permissions.pages = [
+          'dashboard',
+          'store-man',
+          'job-carts',
+          'inventory',
+        ];
+        permissions.features = {
+          units: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
+          inventory: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+            canAdjust: false,
+          },
+          jobCarts: {
+            canCreate: false,
+            canView: true,
+            canComplete: true,
+            canDelete: false,
+          },
+          consumeRequests: {
+            canCreate: true,
+            canApprove: false,
+            canReject: false,
+            canView: true,
+            canDelete: false,
+          },
+          logBook: {
+            canCreate: true,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
+          chat: { canCreate: true, canView: true, canDelete: false },
+        };
+        permissions.navigation = [
+          { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
+          { label: 'Store Man', path: '/dashboard/store-man', icon: 'Wrench' },
+          {
+            label: 'Job Carts',
+            path: '/dashboard/job-carts',
+            icon: 'ShoppingCart',
+          },
+          { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
         ];
         break;
     }

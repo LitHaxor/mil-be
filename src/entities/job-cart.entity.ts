@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Entry } from './entry.entity';
@@ -12,6 +13,7 @@ import { UserUnit } from '../user-unit/entities/user-unit.entity';
 import { Workshop } from '../workshop/entities/workshop.entity';
 import { SparePartTemplate } from '../spare-part/entities/spare-part-template.entity';
 import { User } from './user.entity';
+import { ConsumeRequest } from '../consume-request/entities/consume-request.entity';
 
 export enum JobCartStatus {
   PENDING = 'pending',
@@ -19,6 +21,7 @@ export enum JobCartStatus {
   ISSUED = 'issued',
   REJECTED = 'rejected',
   OC_VETOED = 'oc_vetoed',
+  COMPLETED = 'completed',
 }
 
 @Entity('job_carts')
@@ -106,6 +109,10 @@ export class JobCart {
 
   @Column({ type: 'timestamp', nullable: true })
   issued_at: Date;
+
+  // Consume requests
+  @OneToMany(() => ConsumeRequest, (consumeRequest) => consumeRequest.job_cart)
+  consume_requests: ConsumeRequest[];
 
   @Column('text', { nullable: true })
   notes: string;

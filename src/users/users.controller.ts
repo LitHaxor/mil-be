@@ -52,7 +52,13 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.OC,
+    UserRole.CAPTAIN,
+    UserRole.INSPECTOR_RI_AND_I,
+    UserRole.STORE_MAN,
+  )
   @ApiOperation({
     summary: 'Get all users',
     description: 'Retrieve all users in the system',

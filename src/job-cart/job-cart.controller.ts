@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -25,6 +26,7 @@ import { CreateJobCartDto } from './dto/create-job-cart.dto';
 import { ApproveJobCartDto } from './dto/approve-job-cart.dto';
 import { RejectJobCartDto } from './dto/reject-job-cart.dto';
 import { IssueJobCartDto } from './dto/issue-job-cart.dto';
+import { CompleteJobCartDto } from './dto/complete-job-cart.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
@@ -266,5 +268,32 @@ export class JobCartController {
     @Request() req,
   ) {
     return this.jobCartService.issue(id, issueDto, req.user);
+  }
+
+  @Patch(':id/complete')
+  @Roles(UserRole.STORE_MAN)
+  @ApiOperation({
+    summary: 'Mark job cart as completed',
+    description:
+      'Store manager confirms maintenance work is completed. Can only complete ISSUED carts.',
+  })
+  @ApiParam({ name: 'id', description: 'Job cart ID' })
+  @ApiResponse({ status: 200, description: 'Job cart marked as completed' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Can only complete ISSUED carts',
+  })
+  @ApiResponse({ status: 404, description: 'Job cart not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not assigned as store manager for this workshop',
+  })
+  complete(
+    @Param('id') id: string,
+    @Body() completeDto: CompleteJobCartDto,
+    @Request() req,
+  ) {
+    return this.jobCartService.complete(id, completeDto, req.user);
   }
 }

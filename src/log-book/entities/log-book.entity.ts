@@ -23,6 +23,7 @@ export enum LogType {
   JOB_CARD_REJECTED = 'job_card_rejected',
   JOB_CARD_VETOED = 'job_card_vetoed',
   JOB_CARD_ISSUED = 'job_card_issued',
+  JOB_CARD_COMPLETED = 'job_card_completed',
   INVENTORY_DEDUCTED = 'inventory_deducted',
   INVENTORY_RESTORED = 'inventory_restored',
   WORKSHOP_ASSIGNED_INSPECTOR = 'workshop_assigned_inspector',

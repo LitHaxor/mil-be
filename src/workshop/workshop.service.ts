@@ -57,6 +57,11 @@ export class WorkshopService {
         .andWhere('user.id = :userId', { userId });
     }
 
+    // If user is a store man, only show workshops they're assigned to
+    if (userRole === 'store_man' && userId) {
+      queryBuilder.andWhere('workshop.store_man_id = :userId', { userId });
+    }
+
     const workshops = await queryBuilder.getMany();
 
     return workshops.map((workshop: any) => ({

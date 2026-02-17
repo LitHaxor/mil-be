@@ -52,7 +52,12 @@ export class UserUnitController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.OC,
+    UserRole.INSPECTOR_RI_AND_I,
+    UserRole.STORE_MAN,
+  )
   @ApiOperation({
     summary: 'Get all user units',
     description: 'Retrieve all user units, optionally filtered by workshop',
@@ -69,7 +74,12 @@ export class UserUnitController {
   }
 
   @Get('workshop/:workshopId/in-workshop')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.OC,
+    UserRole.INSPECTOR_RI_AND_I,
+    UserRole.STORE_MAN,
+  )
   @ApiOperation({
     summary: 'Get units in workshop',
     description: 'Get all units currently in a specific workshop',
@@ -85,7 +95,12 @@ export class UserUnitController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.OC,
+    UserRole.INSPECTOR_RI_AND_I,
+    UserRole.STORE_MAN,
+  )
   @ApiOperation({
     summary: 'Get user unit by ID',
     description: 'Retrieve a specific user unit by ID',
