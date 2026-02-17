@@ -17,7 +17,7 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post()
-  @Roles(UserRole.INSPECTOR, UserRole.OC, UserRole.ADMIN)
+  @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
   @ApiOperation({ summary: 'Create chat message', description: 'Send a new chat message for a user unit' })
   @ApiResponse({ status: 201, description: 'Chat message created successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -27,7 +27,7 @@ export class ChatController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get all chat messages', description: 'Retrieve all chat messages, optionally filtered by user unit' })
   @ApiQuery({ name: 'userUnitId', required: false, description: 'Filter by user unit ID' })
   @ApiResponse({ status: 200, description: 'Returns list of chat messages' })
@@ -37,7 +37,7 @@ export class ChatController {
   }
 
   @Get('unread/:userUnitId')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get unread message count', description: 'Get count of unread messages for a user unit' })
   @ApiParam({ name: 'userUnitId', description: 'User unit ID' })
   @ApiResponse({ status: 200, description: 'Returns unread message count' })
@@ -47,7 +47,7 @@ export class ChatController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Get chat message by ID', description: 'Retrieve a specific chat message by ID' })
   @ApiParam({ name: 'id', description: 'Chat message ID' })
   @ApiResponse({ status: 200, description: 'Returns the chat message' })
@@ -70,7 +70,7 @@ export class ChatController {
   }
 
   @Patch(':id/read')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
   @ApiOperation({ summary: 'Mark message as seen', description: 'Add current user to seen_by array' })
   @ApiParam({ name: 'id', description: 'Chat message ID' })
   @ApiResponse({ status: 200, description: 'User added to seen_by' })

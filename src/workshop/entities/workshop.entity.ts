@@ -36,6 +36,35 @@ export class Workshop {
   @JoinColumn({ name: 'created_by_id' })
   owner: User;
 
+  // Role assignments (1:1 relationships)
+  @Column({ nullable: true })
+  inspector_id: string;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'inspector_id' })
+  inspector: User;
+
+  @Column({ nullable: true })
+  store_man_id: string;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'store_man_id' })
+  store_man: User;
+
+  @Column({ nullable: true })
+  captain_id: string;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'captain_id' })
+  captain: User;
+
+  @Column({ nullable: true })
+  oc_id: string;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'oc_id' })
+  oc: User;
+
   @OneToMany(() => User, (user) => user.workshop)
   users: User[];
 

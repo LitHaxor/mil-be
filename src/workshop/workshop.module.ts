@@ -6,9 +6,13 @@ import { Workshop } from './entities/workshop.entity';
 import { ConsumeRequest } from '../consume-request/entities/consume-request.entity';
 import { UserUnit } from '../user-unit/entities/user-unit.entity';
 import { User } from '../entities/user.entity';
+import { LogBookModule } from '../log-book/log-book.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Workshop, ConsumeRequest, UserUnit, User])],
+  imports: [
+    TypeOrmModule.forFeature([Workshop, ConsumeRequest, UserUnit, User]),
+    LogBookModule,
+  ],
   controllers: [WorkshopController],
   providers: [WorkshopService],
   exports: [WorkshopService],

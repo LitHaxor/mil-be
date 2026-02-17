@@ -1,24 +1,16 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsUUID,
+  IsInt,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UnitType } from '../entities/user-unit.entity';
 
 export class CreateUserUnitDto {
-  @ApiProperty({
-    description: 'Name or designation of the unit',
-    example: 'Alpha Squad M16 #5',
-  })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiProperty({
-    description: 'Unique unit identification number',
-    example: 'W-12345-A',
-  })
-  @IsString()
-  @IsNotEmpty()
-  unit_number: string;
-
   @ApiProperty({
     description: 'Type of unit',
     enum: UnitType,
@@ -28,36 +20,118 @@ export class CreateUserUnitDto {
   unit_type: UnitType;
 
   @ApiProperty({
-    description: 'Model name',
-    example: 'M16A4',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  model?: string;
-
-  @ApiProperty({
-    description: 'Manufacturer name',
-    example: 'Colt',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  manufacturer?: string;
-
-  @ApiProperty({
-    description: 'Technical specifications',
-    example: { caliber: '5.56mm', barrel_length: '508mm' },
-    required: false,
-  })
-  @IsOptional()
-  specifications?: Record<string, any>;
-
-  @ApiProperty({
     description: 'Workshop ID where the unit is located',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsUUID()
   @IsNotEmpty()
   workshop_id: string;
+
+  @ApiProperty({
+    description: 'BA/Regiment Number (unique identifier)',
+    example: 26631,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  ba_regt_no?: number;
+
+  @ApiProperty({
+    description: 'Full name with make and model',
+    example: 'Motor Cycle 125cc Runner Turbo',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  full_name_with_model?: string;
+
+  @ApiProperty({
+    description: 'Country of Origin',
+    example: 'Bangladesh',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  country_of_origin?: string;
+
+  @ApiProperty({
+    description: 'Issue date',
+    example: '2017-12-28',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  issue_date?: Date;
+
+  @ApiProperty({
+    description: 'Present kilometers',
+    example: 25850,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  present_km?: number;
+
+  @ApiProperty({
+    description: 'Overhauling date',
+    example: '2024-01-15',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  overhauling_date?: Date;
+
+  @ApiProperty({
+    description: 'CI (Classification/Identification)',
+    example: 'CI-1A',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  ci?: string;
+
+  @ApiProperty({
+    description: 'Auth (Authorized)',
+    example: 1,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  auth?: number;
+
+  @ApiProperty({
+    description: 'Held',
+    example: 1,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  held?: number;
+
+  @ApiProperty({
+    description: 'Unit',
+    example: 'HQ 10 Inf Div',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  unit?: string;
+
+  @ApiProperty({
+    description: 'Maintenance Workshop',
+    example: 'Wdsp',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  maint_wksp?: string;
+
+  @ApiProperty({
+    description: 'Remarks',
+    example: '149',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  rmk?: string;
 }

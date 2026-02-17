@@ -10,6 +10,7 @@ import {
 import { UserUnit } from '../../user-unit/entities/user-unit.entity';
 import { SparePartTemplate } from '../../spare-part/entities/spare-part-template.entity';
 import { User } from '../../entities/user.entity';
+import { JobCart } from '../../entities/job-cart.entity';
 
 export enum RequestStatus {
   PENDING = 'pending',
@@ -28,6 +29,13 @@ export class ConsumeRequest {
   @ManyToOne(() => UserUnit, (unit) => unit.consume_requests)
   @JoinColumn({ name: 'user_unit_id' })
   user_unit: UserUnit;
+
+  @Column({ nullable: true })
+  job_cart_id: string;
+
+  @ManyToOne(() => JobCart, { nullable: true })
+  @JoinColumn({ name: 'job_cart_id' })
+  job_cart: JobCart;
 
   @Column()
   spare_part_id: string;

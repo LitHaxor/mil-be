@@ -14,6 +14,9 @@ import { ConsumeRequest } from './consume-request/entities/consume-request.entit
 import { SourceRequest } from './source-request/entities/source-request.entity';
 import { LogBook } from './log-book/entities/log-book.entity';
 import { ChatMessage } from './chat/entities/chat-message.entity';
+import { Entry } from './entities/entry.entity';
+import { Exit } from './entities/exit.entity';
+import { JobCart } from './entities/job-cart.entity';
 import { WorkshopModule } from './workshop/workshop.module';
 import { UserUnitModule } from './user-unit/user-unit.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -23,6 +26,9 @@ import { SourceRequestModule } from './source-request/source-request.module';
 import { LogBookModule } from './log-book/log-book.module';
 import { ChatModule } from './chat/chat.module';
 import { UsersModule } from './users/users.module';
+import { EntryModule } from './entry/entry.module';
+import { ExitModule } from './exit/exit.module';
+import { JobCartModule } from './job-cart/job-cart.module';
 
 @Module({
   imports: [
@@ -48,6 +54,9 @@ import { UsersModule } from './users/users.module';
           SourceRequest,
           LogBook,
           ChatMessage,
+          Entry,
+          Exit,
+          JobCart,
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
       }),
@@ -64,6 +73,9 @@ import { UsersModule } from './users/users.module';
     LogBookModule,
     ChatModule,
     UsersModule,
+    EntryModule,
+    ExitModule,
+    JobCartModule,
   ],
   controllers: [AppController],
   providers: [AppService],

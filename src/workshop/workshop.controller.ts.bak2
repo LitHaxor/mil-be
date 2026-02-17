@@ -1,0 +1,144 @@
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { WorkshopService } from './workshop.service';
+import { CreateWorkshopDto } from './dto/create-workshop.dto';
+import { UpdateWorkshopDto } from './dto/update-workshop.dto';
+import { AssignRolesDto } from './dto/assign-roles.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { UserRole } from '../entities/user.entity';
+
+@ApiTags('Workshops')
+@ApiBearerAuth()
+@Controller('workshops')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class WorkshopController {
+  constructor(private readonly workshopService: WorkshopService) {}
+
+  @Post()
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create workshop', description: 'Create a new workshop' })
+  @ApiResponse({ status: 201, description: 'Workshop created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  create(@Body() createWorkshopDto: CreateWorkshopDto, @Request() req) {
+    return this.workshopService.create(createWorkshopDto, req.user.userId);
+  }
+
+  @Get()
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get all workshops', description: 'Retrieve all workshops (filtered by assignment for inspectors)' })
+  @ApiResponse({ status: 200, description: 'Returns list of workshops' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findAll(@Request() req) {
+    return this.workshopService.findAll(req.user.id, req.user.role);
+  }
+
+  @Get(':id/analytics')
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get dashboard analytics', description: 'Get analytics data for dashboard charts' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns analytics data' })
+  getAnalytics(@Param('id') id: string) {
+    return this.workshopService.getDashboardAnalytics(id);
+  }
+
+  @Get(':id/stats')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Get workshop statistics', description: 'Get statistics for a specific workshop' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns workshop statistics' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getStats(@Param('id') id: string) {
+    return this.workshopService.getWorkshopStats(id);
+  }
+
+  @Get(':id/users')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Get workshop users', description: 'Get all users assigned to a workshop' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns list of users' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getUsers(@Param('id') id: string) {
+    return this.workshopService.getWorkshopUsers(id);
+  }
+
+  @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR)
+  @ApiOperation({ summary: 'Get workshop by ID', description: 'Retrieve a specific workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Returns the workshop' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  findOne(@Param('id') id: string) {
+    return this.workshopService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({ summary: 'Update workshop', description: 'Update a workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Workshop updated successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  update(@Param('id') id: string, @Body() updateWorkshopDto: UpdateWorkshopDto) {
+    return this.workshopService.update(id, updateWorkshopDto);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete workshop', description: 'Delete a workshop by ID' })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({ status: 200, description: 'Workshop deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  remove(@Param('id') id: string) {
+    return this.workshopService.remove(id);
+  }
+
+  @Patch(':id/assign-roles')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({
+    summary: 'Assign roles to workshop',
+    description:
+      'Assign inspector, store_man, captain, and OC to a workshop. Validates user roles before assignment.',
+  })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Roles assigned successfully with full workshop details',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - User has incorrect role for assignment',
+  })
+  @ApiResponse({ status: 404, description: 'Workshop or user not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin or OC only' })
+  assignRoles(@Param('id') id: string, @Body() assignRolesDto: any, @Request() req) {
+    return this.workshopService.assignRoles(id, assignRolesDto, req.user.id);
+  }
+
+  @Get(':id/readiness')
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.CAPTAIN)
+  @ApiOperation({
+    summary: 'Check workshop readiness',
+    description:
+      'Check if workshop has all required roles assigned (inspector, store_man, captain, OC)',
+  })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns workshop readiness status and assigned roles',
+  })
+  @ApiResponse({ status: 404, description: 'Workshop not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getReadiness(@Param('id') id: string) {
+    return this.workshopService.getWorkshopReadiness(id);
+  }
+}

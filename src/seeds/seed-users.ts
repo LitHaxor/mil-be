@@ -24,7 +24,7 @@ const TEST_USERS = [
     email: 'inspector@milshop.com',
     password: 'Inspector@123',
     full_name: 'Inspector User',
-    role: UserRole.INSPECTOR,
+    role: UserRole.INSPECTOR_RI_AND_I,
   },
 ];
 

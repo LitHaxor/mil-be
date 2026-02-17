@@ -1,0 +1,473 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { CreateWorkshopDto } from './dto/create-workshop.dto';
+import { UpdateWorkshopDto } from './dto/update-workshop.dto';
+import { AssignRolesDto } from './dto/assign-roles.dto';
+import { Workshop } from '../entities/workshop.entity';
+import { ConsumeRequest } from '../consume-request/entities/consume-request.entity';
+import { UserUnit } from '../user-unit/entities/user-unit.entity';
+import { User, UserRole } from '../entities/user.entity';
+import { AutoLoggerService } from '../log-book/services/auto-logger.service';
+import { LogType } from '../entities/log-book.entity';
+
+@Injectable()
+export class WorkshopService {
+  constructor(
+    @InjectRepository(Workshop)
+    private readonly workshopRepository: Repository<Workshop>,
+    @InjectRepository(ConsumeRequest)
+    private readonly consumeRequestRepository: Repository<ConsumeRequest>,
+    @InjectRepository(UserUnit)
+    private readonly userUnitRepository: Repository<UserUnit>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
+    private readonly autoLogger: AutoLoggerService,
+  ) {}
+
+  async create(createWorkshopDto: CreateWorkshopDto, createdById?: string): Promise<Workshop> {
+    const workshop = this.workshopRepository.create({
+      ...createWorkshopDto,
+      created_by_id: createdById,
+    });
+    return await this.workshopRepository.save(workshop);
+  }
+
+  async findAll(userId?: string, userRole?: string): Promise<any[]> {
+    const queryBuilder = this.workshopRepository
+      .createQueryBuilder('workshop')
+      .leftJoinAndSelect('workshop.owner', 'owner')
+      .loadRelationCountAndMap('workshop.usersCount', 'workshop.users')
+      .loadRelationCountAndMap('workshop.unitsCount', 'workshop.user_units')
+      .where('workshop.is_active = :isActive', { isActive: true });
+
+    // If user is an inspector, only show workshops they're assigned to
+    if (userRole === 'inspector' && userId) {
+      queryBuilder
+        .innerJoin('workshop.users', 'user')
+        .andWhere('user.id = :userId', { userId });
+    }
+
+    const workshops = await queryBuilder.getMany();
+
+    return workshops.map((workshop: any) => ({
+      id: workshop.id,
+      name: workshop.name,
+      address: workshop.address,
+      division: workshop.division,
+      description: workshop.description,
+      created_by_id: workshop.created_by_id,
+      created_at: workshop.created_at,
+      updated_at: workshop.updated_at,
+      owner: workshop.owner ? {
+        id: workshop.owner.id,
+        email: workshop.owner.email,
+        full_name: workshop.owner.full_name,
+      } : null,
+      _count: {
+        users: workshop.usersCount || 0,
+        units: workshop.unitsCount || 0,
+      },
+    }));
+  }
+
+  async findOne(id: string): Promise<Workshop> {
+    const workshop = await this.workshopRepository.findOne({
+      where: { id, is_active: true },
+      relations: ['users', 'user_units', 'inventory_items'],
+    });
+
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${id} not found`);
+    }
+
+    return workshop;
+  }
+
+  async update(id: string, updateWorkshopDto: UpdateWorkshopDto): Promise<Workshop> {
+    const workshop = await this.findOne(id);
+    Object.assign(workshop, updateWorkshopDto);
+    return await this.workshopRepository.save(workshop);
+  }
+
+  async remove(id: string): Promise<void> {
+    const workshop = await this.findOne(id);
+    workshop.is_active = false;
+    await this.workshopRepository.save(workshop);
+  }
+
+  async getWorkshopStats(id: string) {
+    const workshop = await this.findOne(id);
+
+    return {
+      workshop,
+      stats: {
+        total_units: workshop.user_units?.length || 0,
+        total_inventory: workshop.inventory_items?.length || 0,
+        total_users: workshop.users?.length || 0,
+      },
+    };
+  }
+
+  async getWorkshopUsers(id: string) {
+    const workshop = await this.workshopRepository
+      .createQueryBuilder('workshop')
+      .leftJoinAndSelect('workshop.users', 'users')
+      .where('workshop.id = :id', { id })
+      .andWhere('workshop.is_active = :isActive', { isActive: true })
+      .getOne();
+
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${id} not found`);
+    }
+
+    return workshop.users?.map(user => ({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      is_active: user.is_active,
+    })) || [];
+  }
+
+  async getDashboardAnalytics(workshopId: string) {
+    // 1. Top consumed spare parts (by approved consume requests)
+    const topConsumed = await this.consumeRequestRepository
+      .createQueryBuilder('cr')
+      .select('cr.spare_part_id', 'spare_part_id')
+      .addSelect('sp.name', 'name')
+      .addSelect('sp.part_number', 'part_number')
+      .addSelect('SUM(cr.requested_quantity)', 'total_consumed')
+      .addSelect('COUNT(cr.id)', 'request_count')
+      .innerJoin('cr.spare_part', 'sp')
+      .innerJoin('cr.user_unit', 'unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('cr.status = :status', { status: 'approved' })
+      .groupBy('cr.spare_part_id')
+      .addGroupBy('sp.name')
+      .addGroupBy('sp.part_number')
+      .orderBy('total_consumed', 'DESC')
+      .limit(6)
+      .getRawMany();
+
+    // 2. Unit maintenance stats (avg time in workshop for completed units)
+    const maintenanceStats = await this.userUnitRepository
+      .createQueryBuilder('unit')
+      .select('unit.unit_type', 'unit_type')
+      .addSelect('COUNT(unit.id)', 'total_units')
+      .addSelect(
+        `AVG(EXTRACT(EPOCH FROM (COALESCE(unit.exited_at, NOW()) - unit.entered_at)) / 86400)`,
+        'avg_days',
+      )
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('unit.entered_at IS NOT NULL')
+      .groupBy('unit.unit_type')
+      .getRawMany();
+
+    // 3. Monthly consume request trends (last 6 months)
+    const monthlyTrends = await this.consumeRequestRepository
+      .createQueryBuilder('cr')
+      .select(`TO_CHAR(cr.created_at, 'YYYY-MM')`, 'month')
+      .addSelect('COUNT(cr.id)', 'total_requests')
+      .addSelect(`SUM(CASE WHEN cr.status = 'approved' THEN 1 ELSE 0 END)`, 'approved')
+      .addSelect(`SUM(CASE WHEN cr.status = 'rejected' THEN 1 ELSE 0 END)`, 'rejected')
+      .addSelect(`SUM(CASE WHEN cr.status = 'pending' THEN 1 ELSE 0 END)`, 'pending')
+      .innerJoin('cr.user_unit', 'unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('cr.created_at >= NOW() - INTERVAL \'6 months\'')
+      .groupBy(`TO_CHAR(cr.created_at, 'YYYY-MM')`)
+      .orderBy('month', 'ASC')
+      .getRawMany();
+
+    // 4. Active inspectors assigned to this workshop
+    const inspectors = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.full_name', 'user.email', 'user.is_active', 'user.updated_at'])
+      .where('user.workshop_id = :workshopId', { workshopId })
+      .andWhere('user.role = :role', { role: UserRole.INSPECTOR_RI_AND_I })
+      .andWhere('user.is_active = :isActive', { isActive: true })
+      .getMany();
+
+    // 5. Unit status breakdown
+    const unitStatusBreakdown = await this.userUnitRepository
+      .createQueryBuilder('unit')
+      .select('unit.status', 'status')
+      .addSelect('COUNT(unit.id)', 'count')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .groupBy('unit.status')
+      .getRawMany();
+
+    return {
+      topConsumed: topConsumed.map(item => ({
+        spare_part_id: item.spare_part_id,
+        name: item.name,
+        part_number: item.part_number,
+        total_consumed: Number(item.total_consumed),
+        request_count: Number(item.request_count),
+      })),
+      maintenanceStats: maintenanceStats.map(item => ({
+        unit_type: item.unit_type,
+        total_units: Number(item.total_units),
+        avg_days: Math.round(Number(item.avg_days) * 10) / 10,
+      })),
+      monthlyTrends: monthlyTrends.map(item => ({
+        month: item.month,
+        total_requests: Number(item.total_requests),
+        approved: Number(item.approved),
+        rejected: Number(item.rejected),
+        pending: Number(item.pending),
+      })),
+      inspectors: inspectors.map(i => ({
+        id: i.id,
+        full_name: i.full_name,
+        email: i.email,
+        is_active: i.is_active,
+      })),
+      unitStatusBreakdown: unitStatusBreakdown.map(item => ({
+        status: item.status || 'unknown',
+        count: Number(item.count),
+      })),
+    };
+  }
+
+  async assignRoles(
+    workshopId: string,
+    assignRolesDto: AssignRolesDto,
+    actorId: string,
+  ): Promise<Workshop> {
+    const workshop = await this.workshopRepository.findOne({
+      where: { id: workshopId },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${workshopId} not found`);
+    }
+
+    // Track previous assignments for logging
+    const previousAssignments = {
+      inspector_id: workshop.inspector_id,
+      store_man_id: workshop.store_man_id,
+      captain_id: workshop.captain_id,
+      oc_id: workshop.oc_id,
+    };
+
+    // Validate and prepare role assignments in a transaction
+    await this.dataSource.transaction(async (manager) => {
+      const logs = [];
+
+      // Validate and assign inspector
+      if (assignRolesDto.inspector_id) {
+        const inspector = await manager.findOne(User, {
+          where: { id: assignRolesDto.inspector_id },
+        });
+
+        if (!inspector) {
+          throw new NotFoundException(
+            `Inspector with ID ${assignRolesDto.inspector_id} not found`,
+          );
+        }
+
+        if (inspector.role !== UserRole.INSPECTOR_RI_AND_I) {
+          throw new BadRequestException(
+            'User must have INSPECTOR_RI_AND_I role to be assigned as inspector',
+          );
+        }
+
+        // Clear previous inspector's workshop_id
+        if (previousAssignments.inspector_id) {
+          await manager.update(User, previousAssignments.inspector_id, {
+            workshop_id: null,
+          });
+        }
+
+        // Update workshop and new inspector
+        workshop.inspector_id = assignRolesDto.inspector_id;
+        await manager.update(User, assignRolesDto.inspector_id, {
+          workshop_id: workshopId,
+        });
+
+        logs.push({
+          logType: LogType.WORKSHOP_ASSIGNED_INSPECTOR,
+          description: `Inspector reassigned from ${previousAssignments.inspector_id || 'none'} to ${assignRolesDto.inspector_id}`,
+        });
+      }
+
+      // Validate and assign store_man
+      if (assignRolesDto.store_man_id) {
+        const storeMan = await manager.findOne(User, {
+          where: { id: assignRolesDto.store_man_id },
+        });
+
+        if (!storeMan) {
+          throw new NotFoundException(
+            `Store Man with ID ${assignRolesDto.store_man_id} not found`,
+          );
+        }
+
+        if (storeMan.role !== UserRole.STORE_MAN) {
+          throw new BadRequestException(
+            'User must have STORE_MAN role to be assigned as store manager',
+          );
+        }
+
+        // Clear previous store_man's workshop_id
+        if (previousAssignments.store_man_id) {
+          await manager.update(User, previousAssignments.store_man_id, {
+            workshop_id: null,
+          });
+        }
+
+        // Update workshop and new store_man
+        workshop.store_man_id = assignRolesDto.store_man_id;
+        await manager.update(User, assignRolesDto.store_man_id, {
+          workshop_id: workshopId,
+        });
+
+        logs.push({
+          logType: LogType.WORKSHOP_ASSIGNED_STORE_MAN,
+          description: `Store Man reassigned from ${previousAssignments.store_man_id || 'none'} to ${assignRolesDto.store_man_id}`,
+        });
+      }
+
+      // Validate and assign captain
+      if (assignRolesDto.captain_id) {
+        const captain = await manager.findOne(User, {
+          where: { id: assignRolesDto.captain_id },
+        });
+
+        if (!captain) {
+          throw new NotFoundException(
+            `Captain with ID ${assignRolesDto.captain_id} not found`,
+          );
+        }
+
+        if (captain.role !== UserRole.CAPTAIN) {
+          throw new BadRequestException(
+            'User must have CAPTAIN role to be assigned as captain',
+          );
+        }
+
+        // Clear previous captain's workshop_id
+        if (previousAssignments.captain_id) {
+          await manager.update(User, previousAssignments.captain_id, {
+            workshop_id: null,
+          });
+        }
+
+        // Update workshop and new captain
+        workshop.captain_id = assignRolesDto.captain_id;
+        await manager.update(User, assignRolesDto.captain_id, {
+          workshop_id: workshopId,
+        });
+
+        logs.push({
+          logType: LogType.WORKSHOP_ASSIGNED_CAPTAIN,
+          description: `Captain reassigned from ${previousAssignments.captain_id || 'none'} to ${assignRolesDto.captain_id}`,
+        });
+      }
+
+      // Validate and assign OC
+      if (assignRolesDto.oc_id) {
+        const oc = await manager.findOne(User, {
+          where: { id: assignRolesDto.oc_id },
+        });
+
+        if (!oc) {
+          throw new NotFoundException(
+            `OC with ID ${assignRolesDto.oc_id} not found`,
+          );
+        }
+
+        if (oc.role !== UserRole.OC) {
+          throw new BadRequestException(
+            'User must have OC role to be assigned as OC',
+          );
+        }
+
+        // Clear previous OC's workshop_id
+        if (previousAssignments.oc_id) {
+          await manager.update(User, previousAssignments.oc_id, {
+            workshop_id: null,
+          });
+        }
+
+        // Update workshop and new OC
+        workshop.oc_id = assignRolesDto.oc_id;
+        await manager.update(User, assignRolesDto.oc_id, {
+          workshop_id: workshopId,
+        });
+
+        logs.push({
+          logType: LogType.WORKSHOP_ASSIGNED_OC,
+          description: `OC reassigned from ${previousAssignments.oc_id || 'none'} to ${assignRolesDto.oc_id}`,
+        });
+      }
+
+      // Save workshop
+      await manager.save(Workshop, workshop);
+
+      // Create logs for all assignments
+      for (const log of logs) {
+        await this.autoLogger.log(
+          {
+            logType: log.logType,
+            actorId,
+            description: log.description,
+            workshopId,
+          },
+          manager,
+        );
+      }
+    });
+
+    // Return updated workshop with relationships
+    return this.workshopRepository.findOne({
+      where: { id: workshopId },
+      relations: ['inspector', 'store_man', 'captain', 'oc'],
+    });
+  }
+
+  async getWorkshopReadiness(workshopId: string): Promise<any> {
+    const workshop = await this.workshopRepository.findOne({
+      where: { id: workshopId },
+      relations: ['inspector', 'store_man', 'captain', 'oc'],
+    });
+
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${workshopId} not found`);
+    }
+
+    const missingRoles = [];
+    if (!workshop.inspector_id) missingRoles.push('inspector');
+    if (!workshop.store_man_id) missingRoles.push('store_man');
+    if (!workshop.captain_id) missingRoles.push('captain');
+    if (!workshop.oc_id) missingRoles.push('oc');
+
+    const isReady = missingRoles.length === 0;
+
+    return {
+      workshop_id: workshopId,
+      is_ready: isReady,
+      assigned_roles: {
+        inspector: workshop.inspector
+          ? { id: workshop.inspector.id, name: workshop.inspector.full_name }
+          : null,
+        store_man: workshop.store_man
+          ? { id: workshop.store_man.id, name: workshop.store_man.full_name }
+          : null,
+        captain: workshop.captain
+          ? { id: workshop.captain.id, name: workshop.captain.full_name }
+          : null,
+        oc: workshop.oc
+          ? { id: workshop.oc.id, name: workshop.oc.full_name }
+          : null,
+      },
+      missing_roles: missingRoles,
+    };
+  }
+}
