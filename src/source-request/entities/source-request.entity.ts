@@ -30,10 +30,10 @@ export class SourceRequest {
   @JoinColumn({ name: 'workshop_id' })
   workshop: Workshop;
 
-  @Column()
+  @Column({ nullable: true })
   spare_part_id: string;
 
-  @ManyToOne(() => SparePartTemplate)
+  @ManyToOne(() => SparePartTemplate, { nullable: true })
   @JoinColumn({ name: 'spare_part_id' })
   spare_part: SparePartTemplate;
 

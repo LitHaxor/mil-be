@@ -37,10 +37,10 @@ export class ConsumeRequest {
   @JoinColumn({ name: 'job_cart_id' })
   job_cart: JobCart;
 
-  @Column()
+  @Column({ nullable: true })
   spare_part_id: string;
 
-  @ManyToOne(() => SparePartTemplate)
+  @ManyToOne(() => SparePartTemplate, { nullable: true })
   @JoinColumn({ name: 'spare_part_id' })
   spare_part: SparePartTemplate;
 

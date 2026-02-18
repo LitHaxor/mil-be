@@ -29,10 +29,10 @@ export class ConsumeRequest {
   @JoinColumn({ name: 'user_unit_id' })
   user_unit: UserUnit;
 
-  @Column()
+  @Column({ nullable: true })
   spare_part_id: string;
 
-  @ManyToOne(() => SparePartTemplate)
+  @ManyToOne(() => SparePartTemplate, { nullable: true })
   @JoinColumn({ name: 'spare_part_id' })
   spare_part: SparePartTemplate;
 

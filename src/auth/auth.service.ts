@@ -100,6 +100,8 @@ export class AuthService {
           'users',
           'units',
           'inventory',
+          'entries',
+          'entry-logs',
         ];
         permissions.features = {
           workshops: {
@@ -133,6 +135,7 @@ export class AuthService {
             canDelete: true,
             canView: true,
           },
+          entries: { canCreate: false, canView: true, canDelete: false },
           exits: { canCreate: true, canView: true, canDelete: true },
           jobCarts: { canCreate: true, canView: true, canDelete: true },
           consumeRequests: {
@@ -162,6 +165,11 @@ export class AuthService {
           { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
           { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
           { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
+          {
+            label: 'Entry Logs',
+            path: '/dashboard/entry-logs',
+            icon: 'ClipboardList',
+          },
           {
             label: 'Workshops',
             path: '/dashboard/workshops',
