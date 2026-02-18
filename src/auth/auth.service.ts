@@ -326,13 +326,11 @@ export class AuthService {
         };
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
-          { label: 'Store Man', path: '/dashboard/store-man', icon: 'Wrench' },
           {
-            label: 'Job Carts',
-            path: '/dashboard/job-carts',
+            label: 'Job Cart',
+            path: '/dashboard/store-man',
             icon: 'ShoppingCart',
           },
-          { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
         ];
         break;
     }
