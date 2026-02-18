@@ -202,7 +202,7 @@ export class UserUnitService {
     });
     const entryIds = entries.map((entry) => entry.id);
 
-    // Use transaction to delete ALL related records and the user unit
+    // Use transaction with raw SQL to avoid TypeORM DeleteQueryBuilder bug
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -210,63 +210,45 @@ export class UserUnitService {
     try {
       // 1. Delete exits (for all entries of this user_unit)
       if (entryIds.length > 0) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .delete()
-          .from(Exit)
-          .where('entry_id IN (:...entryIds)', { entryIds })
-          .execute();
+        const placeholders = entryIds.map((_, i) => `$${i + 1}`).join(', ');
+        await queryRunner.query(
+          `DELETE FROM "exits" WHERE "entry_id" IN (${placeholders})`,
+          entryIds,
+        );
       }
 
       // 2. Delete job carts
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(JobCart)
-        .where('user_unit_id = :id', { id })
-        .execute();
+      await queryRunner.query(
+        `DELETE FROM "job_carts" WHERE "user_unit_id" = $1`,
+        [id],
+      );
 
       // 3. Delete entries
-      if (entryIds.length > 0) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .delete()
-          .from(Entry)
-          .where('user_unit_id = :id', { id })
-          .execute();
-      }
+      await queryRunner.query(
+        `DELETE FROM "entries" WHERE "user_unit_id" = $1`,
+        [id],
+      );
 
       // 4. Delete chat messages
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(ChatMessage)
-        .where('user_unit_id = :id', { id })
-        .execute();
+      await queryRunner.query(
+        `DELETE FROM "chat_messages" WHERE "user_unit_id" = $1`,
+        [id],
+      );
 
       // 5. Delete consume requests
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(ConsumeRequest)
-        .where('user_unit_id = :id', { id })
-        .execute();
+      await queryRunner.query(
+        `DELETE FROM "consume_requests" WHERE "user_unit_id" = $1`,
+        [id],
+      );
 
       // 6. Delete log books
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(LogBook)
-        .where('user_unit_id = :id', { id })
-        .execute();
+      await queryRunner.query(
+        `DELETE FROM "log_books" WHERE "user_unit_id" = $1`,
+        [id],
+      );
 
       // 7. Finally delete the user unit
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(UserUnit)
-        .where('id = :id', { id })
-        .execute();
+      await queryRunner.query(`DELETE FROM "user_units" WHERE "id" = $1`, [id]);
 
       // Commit transaction
       await queryRunner.commitTransaction();
