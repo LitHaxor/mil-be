@@ -50,15 +50,18 @@ export class WorkshopService {
       .loadRelationCountAndMap('workshop.unitsCount', 'workshop.user_units')
       .where('workshop.is_active = :isActive', { isActive: true });
 
+    // If user is an OC, only show the workshop they are assigned to
+    if (userRole === UserRole.OC && userId) {
+      queryBuilder.andWhere('workshop.oc_id = :userId', { userId });
+    }
+
     // If user is an inspector, only show workshops they're assigned to
-    if (userRole === 'inspector' && userId) {
-      queryBuilder
-        .innerJoin('workshop.users', 'user')
-        .andWhere('user.id = :userId', { userId });
+    if (userRole === UserRole.INSPECTOR_RI_AND_I && userId) {
+      queryBuilder.andWhere('workshop.inspector_id = :userId', { userId });
     }
 
     // If user is a store man, only show workshops they're assigned to
-    if (userRole === 'store_man' && userId) {
+    if (userRole === UserRole.STORE_MAN && userId) {
       queryBuilder.andWhere('workshop.store_man_id = :userId', { userId });
     }
 
