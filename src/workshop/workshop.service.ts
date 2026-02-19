@@ -14,6 +14,7 @@ import { UserUnit } from '../user-unit/entities/user-unit.entity';
 import { User, UserRole } from '../entities/user.entity';
 import { AutoLoggerService } from '../log-book/services/auto-logger.service';
 import { LogType } from '../log-book/entities/log-book.entity';
+import { Inventory } from '../inventory/entities/inventory.entity';
 
 @Injectable()
 export class WorkshopService {
@@ -26,6 +27,8 @@ export class WorkshopService {
     private readonly userUnitRepository: Repository<UserUnit>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Inventory)
+    private readonly inventoryRepository: Repository<Inventory>,
     private readonly dataSource: DataSource,
     private readonly autoLogger: AutoLoggerService,
   ) {}
@@ -155,6 +158,33 @@ export class WorkshopService {
   }
 
   async getDashboardAnalytics(workshopId: string) {
+    // 0. Stat card counts
+    const activeUnits = await this.userUnitRepository
+      .createQueryBuilder('unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('unit.status IN (:...statuses)', {
+        statuses: ['in_workshop', 'under_maintenance'],
+      })
+      .getCount();
+
+    const inventoryCount = await this.inventoryRepository
+      .createQueryBuilder('inv')
+      .where('inv.workshop_id = :workshopId', { workshopId })
+      .getCount();
+
+    const lowStockCount = await this.inventoryRepository
+      .createQueryBuilder('inv')
+      .where('inv.workshop_id = :workshopId', { workshopId })
+      .andWhere('inv.quantity <= inv.min_quantity')
+      .getCount();
+
+    const pendingRequests = await this.consumeRequestRepository
+      .createQueryBuilder('cr')
+      .innerJoin('cr.user_unit', 'unit')
+      .where('unit.workshop_id = :workshopId', { workshopId })
+      .andWhere('cr.status = :status', { status: 'pending' })
+      .getCount();
+
     // 1. Top consumed spare parts (by approved consume requests)
     const topConsumed = await this.consumeRequestRepository
       .createQueryBuilder('cr')
@@ -237,6 +267,12 @@ export class WorkshopService {
       .getRawMany();
 
     return {
+      // Stat card counts
+      activeUnits,
+      inventoryCount,
+      pendingRequests,
+      lowStockCount,
+      // Chart data
       topConsumed: topConsumed.map((item) => ({
         spare_part_id: item.spare_part_id,
         name: item.name,
