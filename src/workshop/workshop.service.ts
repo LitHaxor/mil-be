@@ -31,7 +31,7 @@ export class WorkshopService {
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly dataSource: DataSource,
     private readonly autoLogger: AutoLoggerService,
-  ) {}
+  ) { }
 
   async create(
     createWorkshopDto: CreateWorkshopDto,
@@ -53,19 +53,20 @@ export class WorkshopService {
       .loadRelationCountAndMap('workshop.unitsCount', 'workshop.user_units')
       .where('workshop.is_active = :isActive', { isActive: true });
 
-    // If user is an OC, only show the workshop they are assigned to
-    if (userRole === UserRole.OC && userId) {
-      queryBuilder.andWhere('workshop.oc_id = :userId', { userId });
-    }
-
-    // If user is an inspector, only show workshops they're assigned to
-    if (userRole === UserRole.INSPECTOR_RI_AND_I && userId) {
-      queryBuilder.andWhere('workshop.inspector_id = :userId', { userId });
-    }
-
-    // If user is a store man, only show workshops they're assigned to
-    if (userRole === UserRole.STORE_MAN && userId) {
-      queryBuilder.andWhere('workshop.store_man_id = :userId', { userId });
+    // Non-admin, non-captain roles: only show the workshop they're assigned to
+    const restrictedRoles = [
+      UserRole.OC,
+      UserRole.INSPECTOR_RI_AND_I,
+      UserRole.STORE_MAN,
+    ];
+    if (restrictedRoles.includes(userRole as UserRole) && userId) {
+      // Filter to only the workshop where this user's workshop_id matches
+      queryBuilder.innerJoin(
+        'workshop.users',
+        'assignedUser',
+        'assignedUser.id = :userId',
+        { userId },
+      );
     }
 
     const workshops = await queryBuilder.getMany();
@@ -81,10 +82,10 @@ export class WorkshopService {
       updated_at: workshop.updated_at,
       owner: workshop.owner
         ? {
-            id: workshop.owner.id,
-            email: workshop.owner.email,
-            full_name: workshop.owner.full_name,
-          }
+          id: workshop.owner.id,
+          email: workshop.owner.email,
+          full_name: workshop.owner.full_name,
+        }
         : null,
       _count: {
         users: workshop.usersCount || 0,
@@ -330,152 +331,207 @@ export class WorkshopService {
     await this.dataSource.transaction(async (manager) => {
       const logs: Array<{ logType: LogType; description: string }> = [];
 
-      // Validate and assign inspector
-      if (assignRolesDto.inspector_id) {
-        const inspector = await manager.findOne(User, {
-          where: { id: assignRolesDto.inspector_id },
-        });
-
-        if (!inspector) {
-          throw new NotFoundException(
-            `Inspector with ID ${assignRolesDto.inspector_id} not found`,
-          );
+      // Helper: clear a role — nulls the workshop's role field AND the old user's workshop_id
+      const clearRole = async (
+        oldUserId: string | null | undefined,
+        roleField: keyof typeof previousAssignments,
+      ) => {
+        if (oldUserId) {
+          // Clear old user's workshop_id
+          await manager.update(User, oldUserId, { workshop_id: null as any });
         }
+        // Null out the workshop's role slot
+        (workshop as any)[roleField] = null;
+      };
 
-        if (inspector.role !== UserRole.INSPECTOR_RI_AND_I) {
-          throw new BadRequestException(
-            'User must have INSPECTOR_RI_AND_I role to be assigned as inspector',
-          );
-        }
+      // ── INSPECTOR ──────────────────────────────────────────────────────
+      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'inspector_id')) {
+        if (assignRolesDto.inspector_id === null) {
+          // Explicitly unassigning
+          await clearRole(previousAssignments.inspector_id, 'inspector_id');
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_INSPECTOR,
+            description: `Inspector unassigned (was ${previousAssignments.inspector_id || 'none'})`,
+          });
+        } else {
+          // Assigning a new inspector
+          const inspector = await manager.findOne(User, {
+            where: { id: assignRolesDto.inspector_id },
+          });
 
-        // Clear previous inspector's workshop_id
-        if (previousAssignments.inspector_id) {
-          await manager.update(User, previousAssignments.inspector_id, {
-            // workshop_id cleared
+          if (!inspector) {
+            throw new NotFoundException(
+              `Inspector with ID ${assignRolesDto.inspector_id} not found`,
+            );
+          }
+
+          if (inspector.role !== UserRole.INSPECTOR_RI_AND_I) {
+            throw new BadRequestException(
+              'User must have INSPECTOR_RI_AND_I role to be assigned as inspector',
+            );
+          }
+
+          // Clear previous inspector's workshop_id
+          if (
+            previousAssignments.inspector_id &&
+            previousAssignments.inspector_id !== assignRolesDto.inspector_id
+          ) {
+            await manager.update(User, previousAssignments.inspector_id, {
+              workshop_id: null as any,
+            });
+          }
+
+          workshop.inspector_id = assignRolesDto.inspector_id!;
+          await manager.update(User, assignRolesDto.inspector_id!, {
+            workshop_id: workshopId,
+          });
+
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_INSPECTOR,
+            description: `Inspector reassigned from ${previousAssignments.inspector_id || 'none'} to ${assignRolesDto.inspector_id}`,
           });
         }
-
-        // Update workshop and new inspector
-        workshop.inspector_id = assignRolesDto.inspector_id;
-        await manager.update(User, assignRolesDto.inspector_id, {
-          workshop_id: workshopId,
-        });
-
-        logs.push({
-          logType: LogType.WORKSHOP_ASSIGNED_INSPECTOR,
-          description: `Inspector reassigned from ${previousAssignments.inspector_id || 'none'} to ${assignRolesDto.inspector_id}`,
-        });
       }
 
-      // Validate and assign store_man
-      if (assignRolesDto.store_man_id) {
-        const storeMan = await manager.findOne(User, {
-          where: { id: assignRolesDto.store_man_id },
-        });
+      // ── STORE MAN ──────────────────────────────────────────────────────
+      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'store_man_id')) {
+        if (assignRolesDto.store_man_id === null) {
+          await clearRole(previousAssignments.store_man_id, 'store_man_id');
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_STORE_MAN,
+            description: `Store Man unassigned (was ${previousAssignments.store_man_id || 'none'})`,
+          });
+        } else {
+          const storeMan = await manager.findOne(User, {
+            where: { id: assignRolesDto.store_man_id },
+          });
 
-        if (!storeMan) {
-          throw new NotFoundException(
-            `Store Man with ID ${assignRolesDto.store_man_id} not found`,
-          );
-        }
+          if (!storeMan) {
+            throw new NotFoundException(
+              `Store Man with ID ${assignRolesDto.store_man_id} not found`,
+            );
+          }
 
-        if (storeMan.role !== UserRole.STORE_MAN) {
-          throw new BadRequestException(
-            'User must have STORE_MAN role to be assigned as store manager',
-          );
-        }
+          if (storeMan.role !== UserRole.STORE_MAN) {
+            throw new BadRequestException(
+              'User must have STORE_MAN role to be assigned as store manager',
+            );
+          }
 
-        // Clear previous store_man's workshop_id
-        if (previousAssignments.store_man_id) {
-          await manager.update(User, previousAssignments.store_man_id, {
-            // workshop_id cleared
+          // Clear previous store_man's workshop_id
+          if (
+            previousAssignments.store_man_id &&
+            previousAssignments.store_man_id !== assignRolesDto.store_man_id
+          ) {
+            await manager.update(User, previousAssignments.store_man_id, {
+              workshop_id: null as any,
+            });
+          }
+
+          workshop.store_man_id = assignRolesDto.store_man_id!;
+          await manager.update(User, assignRolesDto.store_man_id!, {
+            workshop_id: workshopId,
+          });
+
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_STORE_MAN,
+            description: `Store Man reassigned from ${previousAssignments.store_man_id || 'none'} to ${assignRolesDto.store_man_id}`,
           });
         }
-
-        // Update workshop and new store_man
-        workshop.store_man_id = assignRolesDto.store_man_id;
-        await manager.update(User, assignRolesDto.store_man_id, {
-          workshop_id: workshopId,
-        });
-
-        logs.push({
-          logType: LogType.WORKSHOP_ASSIGNED_STORE_MAN,
-          description: `Store Man reassigned from ${previousAssignments.store_man_id || 'none'} to ${assignRolesDto.store_man_id}`,
-        });
       }
 
-      // Validate and assign captain
-      if (assignRolesDto.captain_id) {
-        const captain = await manager.findOne(User, {
-          where: { id: assignRolesDto.captain_id },
-        });
+      // ── CAPTAIN ────────────────────────────────────────────────────────
+      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'captain_id')) {
+        if (assignRolesDto.captain_id === null) {
+          await clearRole(previousAssignments.captain_id, 'captain_id');
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_CAPTAIN,
+            description: `Captain unassigned (was ${previousAssignments.captain_id || 'none'})`,
+          });
+        } else {
+          const captain = await manager.findOne(User, {
+            where: { id: assignRolesDto.captain_id },
+          });
 
-        if (!captain) {
-          throw new NotFoundException(
-            `Captain with ID ${assignRolesDto.captain_id} not found`,
-          );
-        }
+          if (!captain) {
+            throw new NotFoundException(
+              `Captain with ID ${assignRolesDto.captain_id} not found`,
+            );
+          }
 
-        if (captain.role !== UserRole.CAPTAIN) {
-          throw new BadRequestException(
-            'User must have CAPTAIN role to be assigned as captain',
-          );
-        }
+          if (captain.role !== UserRole.CAPTAIN) {
+            throw new BadRequestException(
+              'User must have CAPTAIN role to be assigned as captain',
+            );
+          }
 
-        // Clear previous captain's workshop_id
-        if (previousAssignments.captain_id) {
-          await manager.update(User, previousAssignments.captain_id, {
-            // workshop_id cleared
+          // Clear previous captain's workshop_id
+          if (
+            previousAssignments.captain_id &&
+            previousAssignments.captain_id !== assignRolesDto.captain_id
+          ) {
+            await manager.update(User, previousAssignments.captain_id, {
+              workshop_id: null as any,
+            });
+          }
+
+          workshop.captain_id = assignRolesDto.captain_id!;
+          await manager.update(User, assignRolesDto.captain_id!, {
+            workshop_id: workshopId,
+          });
+
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_CAPTAIN,
+            description: `Captain reassigned from ${previousAssignments.captain_id || 'none'} to ${assignRolesDto.captain_id}`,
           });
         }
-
-        // Update workshop and new captain
-        workshop.captain_id = assignRolesDto.captain_id;
-        await manager.update(User, assignRolesDto.captain_id, {
-          workshop_id: workshopId,
-        });
-
-        logs.push({
-          logType: LogType.WORKSHOP_ASSIGNED_CAPTAIN,
-          description: `Captain reassigned from ${previousAssignments.captain_id || 'none'} to ${assignRolesDto.captain_id}`,
-        });
       }
 
-      // Validate and assign OC
-      if (assignRolesDto.oc_id) {
-        const oc = await manager.findOne(User, {
-          where: { id: assignRolesDto.oc_id },
-        });
+      // ── OC ─────────────────────────────────────────────────────────────
+      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'oc_id')) {
+        if (assignRolesDto.oc_id === null) {
+          await clearRole(previousAssignments.oc_id, 'oc_id');
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_OC,
+            description: `OC unassigned (was ${previousAssignments.oc_id || 'none'})`,
+          });
+        } else {
+          const oc = await manager.findOne(User, {
+            where: { id: assignRolesDto.oc_id },
+          });
 
-        if (!oc) {
-          throw new NotFoundException(
-            `OC with ID ${assignRolesDto.oc_id} not found`,
-          );
-        }
+          if (!oc) {
+            throw new NotFoundException(
+              `OC with ID ${assignRolesDto.oc_id} not found`,
+            );
+          }
 
-        if (oc.role !== UserRole.OC) {
-          throw new BadRequestException(
-            'User must have OC role to be assigned as OC',
-          );
-        }
+          if (oc.role !== UserRole.OC) {
+            throw new BadRequestException(
+              'User must have OC role to be assigned as OC',
+            );
+          }
 
-        // Clear previous OC's workshop_id
-        if (previousAssignments.oc_id) {
-          await manager.update(User, previousAssignments.oc_id, {
-            // workshop_id cleared
+          // Clear previous OC's workshop_id
+          if (
+            previousAssignments.oc_id &&
+            previousAssignments.oc_id !== assignRolesDto.oc_id
+          ) {
+            await manager.update(User, previousAssignments.oc_id, {
+              workshop_id: null as any,
+            });
+          }
+
+          workshop.oc_id = assignRolesDto.oc_id!;
+          await manager.update(User, assignRolesDto.oc_id!, {
+            workshop_id: workshopId,
+          });
+
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_OC,
+            description: `OC reassigned from ${previousAssignments.oc_id || 'none'} to ${assignRolesDto.oc_id}`,
           });
         }
-
-        // Update workshop and new OC
-        workshop.oc_id = assignRolesDto.oc_id;
-        await manager.update(User, assignRolesDto.oc_id, {
-          workshop_id: workshopId,
-        });
-
-        logs.push({
-          logType: LogType.WORKSHOP_ASSIGNED_OC,
-          description: `OC reassigned from ${previousAssignments.oc_id || 'none'} to ${assignRolesDto.oc_id}`,
-        });
       }
 
       // Save workshop
@@ -506,6 +562,111 @@ export class WorkshopService {
     }
 
     return updatedWorkshop;
+  }
+
+  async assignUser(
+    workshopId: string,
+    userId: string,
+    actorId: string,
+  ): Promise<{ message: string }> {
+    const workshop = await this.workshopRepository.findOne({
+      where: { id: workshopId },
+    });
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${workshopId} not found`);
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Map user role → workshop role field
+    const roleToField: Partial<Record<UserRole, string>> = {
+      [UserRole.INSPECTOR_RI_AND_I]: 'inspector_id',
+      [UserRole.STORE_MAN]: 'store_man_id',
+      [UserRole.CAPTAIN]: 'captain_id',
+      [UserRole.OC]: 'oc_id',
+    };
+    const roleField = roleToField[user.role];
+
+    await this.dataSource.transaction(async (manager) => {
+      // If this role slot is occupied by a DIFFERENT user, clear their workshop_id
+      if (roleField) {
+        const previousUserId = (workshop as any)[roleField];
+        if (previousUserId && previousUserId !== userId) {
+          await manager.update(User, previousUserId, {
+            workshop_id: null as any,
+          });
+        }
+        // Set role slot on workshop
+        (workshop as any)[roleField] = userId;
+        await manager.save(Workshop, workshop);
+      }
+
+      // Set user's workshop_id
+      await manager.update(User, userId, { workshop_id: workshopId });
+    });
+
+    return { message: 'User assigned successfully' };
+  }
+
+  async unassignRole(
+    workshopId: string,
+    userId: string,
+    actorId: string,
+  ): Promise<{ message: string }> {
+    const workshop = await this.workshopRepository.findOne({
+      where: { id: workshopId },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException(`Workshop with ID ${workshopId} not found`);
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Determine which role field this user occupies and clear it
+    const roleFieldMap: Record<string, string> = {
+      inspector_id: 'inspector_id',
+      store_man_id: 'store_man_id',
+      captain_id: 'captain_id',
+      oc_id: 'oc_id',
+    };
+
+    let clearedRole: string | null = null;
+    for (const field of Object.keys(roleFieldMap)) {
+      if ((workshop as any)[field] === userId) {
+        (workshop as any)[field] = null;
+        clearedRole = field;
+        break;
+      }
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      // Clear user's workshop_id
+      await manager.update(User, userId, { workshop_id: null as any });
+
+      // Save workshop with cleared role slot
+      await manager.save(Workshop, workshop);
+
+      if (clearedRole) {
+        await this.autoLogger.log(
+          {
+            logType: LogType.WORKSHOP_ASSIGNED_INSPECTOR,
+            actorId,
+            description: `User ${userId} unassigned from ${clearedRole} in workshop ${workshopId}`,
+            workshopId,
+          },
+          manager,
+        );
+      }
+    });
+
+    return { message: 'User unassigned successfully' };
   }
 
   async getWorkshopReadiness(workshopId: string): Promise<any> {

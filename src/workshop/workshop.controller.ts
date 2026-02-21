@@ -30,7 +30,7 @@ import { UserRole } from '../entities/user.entity';
 @Controller('workshops')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkshopController {
-  constructor(private readonly workshopService: WorkshopService) {}
+  constructor(private readonly workshopService: WorkshopService) { }
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -189,6 +189,42 @@ export class WorkshopController {
     @Request() req,
   ) {
     return this.workshopService.assignRoles(id, assignRolesDto, req.user.id);
+  }
+
+  @Patch(':id/unassign-role/:userId')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({
+    summary: 'Unassign a user from their role in the workshop',
+    description: 'Clears the role slot for the given user and removes their workshop assignment.',
+  })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiParam({ name: 'userId', description: 'User ID to unassign' })
+  @ApiResponse({ status: 200, description: 'User unassigned successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop or user not found' })
+  unassignRole(
+    @Param('id') workshopId: string,
+    @Param('userId') userId: string,
+    @Request() req,
+  ) {
+    return this.workshopService.unassignRole(workshopId, userId, req.user.id);
+  }
+
+  @Patch(':id/assign-user/:userId')
+  @Roles(UserRole.ADMIN, UserRole.OC)
+  @ApiOperation({
+    summary: 'Assign a user to a workshop',
+    description: 'Sets workshop_id on the user and updates the matching role slot on the workshop.',
+  })
+  @ApiParam({ name: 'id', description: 'Workshop ID' })
+  @ApiParam({ name: 'userId', description: 'User ID to assign' })
+  @ApiResponse({ status: 200, description: 'User assigned successfully' })
+  @ApiResponse({ status: 404, description: 'Workshop or user not found' })
+  assignUser(
+    @Param('id') workshopId: string,
+    @Param('userId') userId: string,
+    @Request() req,
+  ) {
+    return this.workshopService.assignUser(workshopId, userId, req.user.id);
   }
 
   @Get(':id/readiness')
