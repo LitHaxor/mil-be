@@ -13,7 +13,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async login(loginDto: LoginDto) {
     // Authenticate with Supabase
@@ -276,8 +276,6 @@ export class AuthService {
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           { label: 'Entry', path: '/dashboard/entries', icon: 'ClipboardList' },
-          { label: 'Units', path: '/dashboard/units', icon: 'Truck' },
-          { label: 'Inventory', path: '/dashboard/inventory', icon: 'Package' },
           { label: 'Job Carts', path: '/dashboard/job-carts', icon: 'Wrench' },
         ];
         break;
