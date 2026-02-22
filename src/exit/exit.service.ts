@@ -85,16 +85,19 @@ export class ExitService {
       }
 
       // Update user_unit: clear active_workshop, set status to EXITED, update history
+      const userUnitUpdate: any = {
+        status: UnitStatus.EXITED,
+        active_workshop_id: () => 'NULL',
+        exited_at: new Date(),
+        workshop_history: workshopHistory,
+      };
+      if (createExitDto.unit) {
+        userUnitUpdate.unit = createExitDto.unit;
+      }
       await queryRunner.manager
         .createQueryBuilder()
         .update(UserUnit)
-        .set({
-          unit: createExitDto.unit,
-          status: UnitStatus.EXITED,
-          active_workshop_id: () => 'NULL',
-          exited_at: new Date(),
-          workshop_history: workshopHistory,
-        })
+        .set(userUnitUpdate)
         .where('id = :id', { id: entry.user_unit_id })
         .execute();
 
