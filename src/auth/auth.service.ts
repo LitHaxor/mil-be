@@ -326,8 +326,8 @@ export class AuthService {
           },
           consumeRequests: {
             canCreate: true,
-            canApprove: false,
-            canReject: false,
+            canApprove: true,
+            canReject: true,
             canView: true,
             canDelete: false,
           },
@@ -345,6 +345,11 @@ export class AuthService {
             label: 'Job Cart',
             path: '/dashboard/store-man',
             icon: 'ShoppingCart',
+          },
+          {
+            label: 'Inventory',
+            path: '/dashboard/inventory',
+            icon: 'Package',
           },
         ];
         break;
