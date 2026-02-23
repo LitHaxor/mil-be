@@ -27,9 +27,16 @@ export class UsersService {
     const existingUser = await this.userRepository.findOne({
       where: { email: createUserDto.email },
     });
-
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
+    }
+
+    // Check if BA number already exists
+    const existingBaUser = await this.userRepository.findOne({
+      where: { user_ba_no: createUserDto.user_ba_no },
+    });
+    if (existingBaUser) {
+      throw new ConflictException('User with this BA Number already exists');
     }
 
     // Verify workshop exists
@@ -64,6 +71,7 @@ export class UsersService {
     const user = this.userRepository.create({
       id: authData.user.id,
       email: createUserDto.email,
+      user_ba_no: createUserDto.user_ba_no,
       full_name: createUserDto.full_name,
       avatar_url: createUserDto.avatar_url,
       role: createUserDto.role,
@@ -139,6 +147,7 @@ export class UsersService {
       select: [
         'id',
         'email',
+        'user_ba_no',
         'full_name',
         'role',
         'workshop_id',

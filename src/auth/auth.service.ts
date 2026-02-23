@@ -13,12 +13,29 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) { }
+  ) {}
 
   async login(loginDto: LoginDto) {
+    // Resolve email from either email or user_ba_no
+    let loginEmail = loginDto.email;
+
+    if (!loginEmail && loginDto.user_ba_no) {
+      const userByBaNo = await this.userRepository.findOne({
+        where: { user_ba_no: loginDto.user_ba_no },
+      });
+      if (!userByBaNo) {
+        throw new UnauthorizedException('Invalid BA Number or password');
+      }
+      loginEmail = userByBaNo.email;
+    }
+
+    if (!loginEmail) {
+      throw new UnauthorizedException('Email or BA Number is required');
+    }
+
     // Authenticate with Supabase
     const { data, error } = await this.supabaseService.signIn(
-      loginDto.email,
+      loginEmail,
       loginDto.password,
     );
 
