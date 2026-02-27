@@ -4,8 +4,11 @@ import {
   IsOptional,
   IsString,
   IsBoolean,
+  IsInt,
+  IsNotEmpty,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../entities/user.entity';
 
@@ -16,6 +19,15 @@ export class CreateUserDto {
   })
   @IsEmail()
   email!: string;
+
+  @ApiProperty({
+    description: 'User BA Number (mandatory, integer)',
+    example: 123456,
+  })
+  @Type(() => Number)
+  @IsInt({ message: 'User BA Number must be an integer' })
+  @IsNotEmpty({ message: 'User BA Number is required' })
+  user_ba_no!: number;
 
   @ApiProperty({
     description: 'User password (minimum 6 characters)',

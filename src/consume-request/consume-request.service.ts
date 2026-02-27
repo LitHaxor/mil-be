@@ -1,12 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateConsumeRequestDto } from './dto/create-consume-request.dto';
 import { UpdateConsumeRequestDto } from './dto/update-consume-request.dto';
-import { ConsumeRequest, RequestStatus } from './entities/consume-request.entity';
+import {
+  ConsumeRequest,
+  RequestStatus,
+} from './entities/consume-request.entity';
 import { Inventory } from '../inventory/entities/inventory.entity';
 import { LogBookService } from '../log-book/log-book.service';
 import { LogType } from '../log-book/entities/log-book.entity';
+import { User, UserRole } from '../entities/user.entity';
 
 @Injectable()
 export class ConsumeRequestService {
@@ -18,12 +27,19 @@ export class ConsumeRequestService {
     private readonly logBookService: LogBookService,
   ) {}
 
-  async create(createConsumeRequestDto: CreateConsumeRequestDto): Promise<ConsumeRequest> {
-    const request = this.consumeRequestRepository.create(createConsumeRequestDto);
+  async create(
+    createConsumeRequestDto: CreateConsumeRequestDto,
+  ): Promise<ConsumeRequest> {
+    const request = this.consumeRequestRepository.create(
+      createConsumeRequestDto,
+    );
     return await this.consumeRequestRepository.save(request);
   }
 
-  async findAll(userUnitId?: string, status?: RequestStatus): Promise<ConsumeRequest[]> {
+  async findAll(
+    userUnitId?: string,
+    status?: RequestStatus,
+  ): Promise<ConsumeRequest[]> {
     const where: any = {};
     if (userUnitId) where.user_unit_id = userUnitId;
     if (status) where.status = status;
@@ -48,13 +64,33 @@ export class ConsumeRequestService {
     return request;
   }
 
-  async update(id: string, updateConsumeRequestDto: UpdateConsumeRequestDto): Promise<ConsumeRequest> {
+  async update(
+    id: string,
+    updateConsumeRequestDto: UpdateConsumeRequestDto,
+  ): Promise<ConsumeRequest> {
     const request = await this.findOne(id);
     Object.assign(request, updateConsumeRequestDto);
     return await this.consumeRequestRepository.save(request);
   }
 
-  async approve(id: string, approvedById: string): Promise<ConsumeRequest> {
+  async approve(
+    id: string,
+    approvedById: string,
+    partSerialNumbers?: string,
+    approverUser?: User,
+  ): Promise<ConsumeRequest> {
+    // Only STORE_MAN, OC, or ADMIN can approve consume requests
+    if (
+      approverUser &&
+      approverUser.role !== UserRole.STORE_MAN &&
+      approverUser.role !== UserRole.OC &&
+      approverUser.role !== UserRole.ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only Store Manager, OC, or Admin can approve consume requests',
+      );
+    }
+
     const request = await this.findOne(id);
 
     if (request.status !== RequestStatus.PENDING) {
@@ -75,7 +111,9 @@ export class ConsumeRequestService {
     });
 
     if (!inventoryItem) {
-      throw new BadRequestException('No inventory found for this spare part in the workshop');
+      throw new BadRequestException(
+        'No inventory found for this spare part in the workshop',
+      );
     }
 
     if (inventoryItem.quantity < request.requested_quantity) {
@@ -88,10 +126,13 @@ export class ConsumeRequestService {
     inventoryItem.quantity -= request.requested_quantity;
     await this.inventoryRepository.save(inventoryItem);
 
-    // Approve the request
+    // Approve the request and store serial numbers
     request.status = RequestStatus.APPROVED;
     request.approved_by_id = approvedById;
     request.approved_at = new Date();
+    if (partSerialNumbers) {
+      request.part_serial_numbers = partSerialNumbers;
+    }
 
     const saved = await this.consumeRequestRepository.save(request);
 
@@ -100,7 +141,7 @@ export class ConsumeRequestService {
     await this.logBookService.create({
       user_unit_id: request.user_unit_id,
       log_type: LogType.INVENTORY_CONSUMED,
-      description: `Consumed ${request.requested_quantity}x "${sparePartName}" (request approved). Stock: ${inventoryItem.quantity + request.requested_quantity} → ${inventoryItem.quantity}`,
+      description: `Consumed ${request.requested_quantity}x "${sparePartName}" (request approved by store man). Stock: ${inventoryItem.quantity + request.requested_quantity} → ${inventoryItem.quantity}${partSerialNumbers ? ` | Serials: ${partSerialNumbers}` : ''}`,
       performed_by_id: approvedById,
       metadata: {
         consume_request_id: request.id,
@@ -109,13 +150,18 @@ export class ConsumeRequestService {
         quantity: request.requested_quantity,
         stock_before: inventoryItem.quantity + request.requested_quantity,
         stock_after: inventoryItem.quantity,
+        part_serial_numbers: partSerialNumbers || null,
       },
     });
 
     return saved;
   }
 
-  async reject(id: string, approvedById: string, reason: string): Promise<ConsumeRequest> {
+  async reject(
+    id: string,
+    approvedById: string,
+    reason: string,
+  ): Promise<ConsumeRequest> {
     const request = await this.findOne(id);
 
     if (request.status !== RequestStatus.PENDING) {

@@ -10,6 +10,7 @@ import { Workshop } from './workshop/entities/workshop.entity';
 import { UserUnit } from './user-unit/entities/user-unit.entity';
 import { SparePartTemplate } from './spare-part/entities/spare-part-template.entity';
 import { Inventory } from './inventory/entities/inventory.entity';
+import { StockUpdateRequest } from './inventory/entities/stock-update-request.entity';
 import { ConsumeRequest } from './consume-request/entities/consume-request.entity';
 import { SourceRequest } from './source-request/entities/source-request.entity';
 import { LogBook } from './log-book/entities/log-book.entity';
@@ -50,6 +51,7 @@ import { JobCartModule } from './job-cart/job-cart.module';
           UserUnit,
           SparePartTemplate,
           Inventory,
+          StockUpdateRequest,
           ConsumeRequest,
           SourceRequest,
           LogBook,

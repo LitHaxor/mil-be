@@ -84,17 +84,18 @@ export class JobCartService {
       status: UnitStatus.UNDER_MAINTENANCE,
     });
 
-    // If spare parts are needed, create consume request
+    // Spare parts are REQUIRED — create a consume request linked to this job cart
     if (createJobCartDto.spare_part_id && createJobCartDto.requested_quantity) {
       const consumeRequest = this.consumeRequestRepository.create({
         user_unit_id: entry.user_unit_id,
         spare_part_id: createJobCartDto.spare_part_id,
         requested_quantity: createJobCartDto.requested_quantity,
         requested_by_id: user.id,
+        job_cart_id: savedJobCart.id,
         status: RequestStatus.PENDING,
         notes:
           createJobCartDto.notes ||
-          `Auto-created from job cart #${savedJobCart.id.substring(0, 8)}`,
+          `Spare parts requested by inspector for job cart #${savedJobCart.id.substring(0, 8)}`,
       });
 
       await this.consumeRequestRepository.save(consumeRequest);
@@ -248,16 +249,8 @@ export class JobCartService {
       throw new NotFoundException('Job cart not found');
     }
 
-    // Store_man can only view APPROVED job carts
-    if (
-      user &&
-      user.role === UserRole.STORE_MAN &&
-      jobCart.status !== JobCartStatus.APPROVED
-    ) {
-      throw new ForbiddenException(
-        'Store managers can only view approved job carts',
-      );
-    }
+    // Store_man can view all job carts (they need to process consume requests on PENDING ones too)
+    // Previously restricted to APPROVED only, but now they manage consume request approval first
 
     // Get current inventory for this part
     const inventory = await this.inventoryRepository.findOne({

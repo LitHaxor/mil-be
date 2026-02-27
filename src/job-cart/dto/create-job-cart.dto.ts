@@ -9,23 +9,22 @@ export class CreateJobCartDto {
   @IsUUID()
   entry_id: string;
 
-  @ApiPropertyOptional({
-    description: 'Spare part ID needed for repair (optional)',
+  @ApiProperty({
+    description:
+      'Spare part ID needed for repair (required — inspector must specify the part being requested)',
     example: '123e4567-e89b-12d3-a456-426614174001',
   })
-  @IsOptional()
   @IsUUID()
-  spare_part_id?: string;
+  spare_part_id: string;
 
-  @ApiPropertyOptional({
-    description: 'Quantity of spare parts requested',
+  @ApiProperty({
+    description: 'Quantity of spare parts requested (required)',
     example: 2,
     minimum: 1,
   })
-  @IsOptional()
   @IsNumber()
   @Min(1)
-  requested_quantity?: number;
+  requested_quantity: number;
 
   @ApiPropertyOptional({
     description: 'Additional notes or justification for the request',

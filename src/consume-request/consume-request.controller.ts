@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -146,10 +147,11 @@ export class ConsumeRequestController {
   }
 
   @Patch(':id/approve')
-  @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
+  @Roles(UserRole.STORE_MAN, UserRole.OC, UserRole.ADMIN)
   @ApiOperation({
-    summary: 'Approve consume request',
-    description: 'Approve a consume request and consume the inventory',
+    summary: 'Approve consume request (Store Man)',
+    description:
+      'Store Man approves a consume request, deducting inventory and recording part serial numbers.',
   })
   @ApiParam({ name: 'id', description: 'Consume request ID' })
   @ApiBody({
@@ -159,23 +161,43 @@ export class ConsumeRequestController {
           type: 'string',
           example: '550e8400-e29b-41d4-a716-446655440000',
         },
+        part_serial_numbers: {
+          type: 'string',
+          example: 'SN-001, SN-002',
+          description: 'Comma-separated serial numbers of parts being issued',
+        },
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Request approved successfully' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Request approved, inventory decremented, serial numbers recorded',
+  })
   @ApiResponse({ status: 404, description: 'Consume request not found' })
   @ApiResponse({ status: 400, description: 'Insufficient inventory' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Insufficient permissions',
+    description: 'Forbidden - Store Man, OC, or Admin only',
   })
-  approve(@Param('id') id: string, @Body('approvedById') approvedById: string) {
-    return this.consumeRequestService.approve(id, approvedById);
+  approve(
+    @Param('id') id: string,
+    @Body('approvedById') approvedById: string,
+    @Body('part_serial_numbers') partSerialNumbers: string,
+    @Request() req,
+  ) {
+    const actorId = approvedById || req.user?.id;
+    return this.consumeRequestService.approve(
+      id,
+      actorId,
+      partSerialNumbers,
+      req.user,
+    );
   }
 
   @Patch(':id/reject')
-  @Roles(UserRole.INSPECTOR_RI_AND_I, UserRole.OC, UserRole.ADMIN)
+  @Roles(UserRole.STORE_MAN, UserRole.OC, UserRole.ADMIN)
   @ApiOperation({
     summary: 'Reject consume request',
     description: 'Reject a consume request with a reason',

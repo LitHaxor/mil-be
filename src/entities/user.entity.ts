@@ -25,6 +25,9 @@ export class User {
   @Column({ unique: true })
   email!: string;
 
+  @Column({ type: 'int', unique: true, nullable: true })
+  user_ba_no?: number;
+
   @Column({ nullable: true })
   full_name?: string;
 

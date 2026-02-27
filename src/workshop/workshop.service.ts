@@ -31,7 +31,7 @@ export class WorkshopService {
     private readonly inventoryRepository: Repository<Inventory>,
     private readonly dataSource: DataSource,
     private readonly autoLogger: AutoLoggerService,
-  ) { }
+  ) {}
 
   async create(
     createWorkshopDto: CreateWorkshopDto,
@@ -82,10 +82,10 @@ export class WorkshopService {
       updated_at: workshop.updated_at,
       owner: workshop.owner
         ? {
-          id: workshop.owner.id,
-          email: workshop.owner.email,
-          full_name: workshop.owner.full_name,
-        }
+            id: workshop.owner.id,
+            email: workshop.owner.email,
+            full_name: workshop.owner.full_name,
+          }
         : null,
       _count: {
         users: workshop.usersCount || 0,
@@ -152,6 +152,7 @@ export class WorkshopService {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
+        user_ba_no: user.user_ba_no,
         role: user.role,
         is_active: user.is_active,
       })) || []
@@ -345,7 +346,9 @@ export class WorkshopService {
       };
 
       // ── INSPECTOR ──────────────────────────────────────────────────────
-      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'inspector_id')) {
+      if (
+        Object.prototype.hasOwnProperty.call(assignRolesDto, 'inspector_id')
+      ) {
         if (assignRolesDto.inspector_id === null) {
           // Explicitly unassigning
           await clearRole(previousAssignments.inspector_id, 'inspector_id');
@@ -394,7 +397,9 @@ export class WorkshopService {
       }
 
       // ── STORE MAN ──────────────────────────────────────────────────────
-      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'store_man_id')) {
+      if (
+        Object.prototype.hasOwnProperty.call(assignRolesDto, 'store_man_id')
+      ) {
         if (assignRolesDto.store_man_id === null) {
           await clearRole(previousAssignments.store_man_id, 'store_man_id');
           logs.push({
