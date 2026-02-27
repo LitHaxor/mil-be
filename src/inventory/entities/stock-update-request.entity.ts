@@ -7,57 +7,60 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { UserUnit } from '../../user-unit/entities/user-unit.entity';
+import { Inventory } from './inventory.entity';
 import { SparePartTemplate } from '../../spare-part/entities/spare-part-template.entity';
+import { Workshop } from '../../workshop/entities/workshop.entity';
 import { User } from '../../entities/user.entity';
-import { JobCart } from '../../entities/job-cart.entity';
 
-export enum RequestStatus {
+export enum StockUpdateStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
 
-@Entity('consume_requests')
-export class ConsumeRequest {
+@Entity('stock_update_requests')
+export class StockUpdateRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  user_unit_id: string;
+  inventory_id: string;
 
-  @ManyToOne(() => UserUnit, (unit) => unit.consume_requests)
-  @JoinColumn({ name: 'user_unit_id' })
-  user_unit: UserUnit;
+  @ManyToOne(() => Inventory, { nullable: false })
+  @JoinColumn({ name: 'inventory_id' })
+  inventory: Inventory;
 
-  @Column({ nullable: true })
-  job_cart_id: string;
-
-  @ManyToOne(() => JobCart, { nullable: true })
-  @JoinColumn({ name: 'job_cart_id' })
-  job_cart: JobCart;
-
-  @Column({ nullable: true })
+  @Column()
   spare_part_id: string;
 
-  @ManyToOne(() => SparePartTemplate, { nullable: true })
+  @ManyToOne(() => SparePartTemplate, { nullable: false })
   @JoinColumn({ name: 'spare_part_id' })
   spare_part: SparePartTemplate;
 
+  @Column()
+  workshop_id: string;
+
+  @ManyToOne(() => Workshop, { nullable: false })
+  @JoinColumn({ name: 'workshop_id' })
+  workshop: Workshop;
+
   @Column('int')
-  requested_quantity: number;
+  quantity_to_add: number;
+
+  @Column({ nullable: true })
+  reason: string;
 
   @Column({
     type: 'enum',
-    enum: RequestStatus,
-    default: RequestStatus.PENDING,
+    enum: StockUpdateStatus,
+    default: StockUpdateStatus.PENDING,
   })
-  status: RequestStatus;
+  status: StockUpdateStatus;
 
   @Column()
   requested_by_id: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'requested_by_id' })
   requested_by: User;
 
@@ -71,18 +74,8 @@ export class ConsumeRequest {
   @Column({ nullable: true })
   rejection_reason: string;
 
-  @Column({ nullable: true })
-  notes: string;
-
   @Column({ type: 'timestamp', nullable: true })
   approved_at: Date;
-
-  /**
-   * Serial numbers of the physical parts handed over by Store Man when approving.
-   * Stored as a comma-separated string (e.g. "SN-001, SN-002, SN-003").
-   */
-  @Column({ nullable: true })
-  part_serial_numbers: string;
 
   @CreateDateColumn()
   created_at: Date;
