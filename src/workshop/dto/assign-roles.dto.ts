@@ -23,6 +23,16 @@ export class AssignRolesDto {
   store_man_id?: string | null;
 
   @ApiPropertyOptional({
+    description: 'Chief Maintenance Engineer (CME) user ID to assign to workshop, or null to unassign',
+    example: '123e4567-e89b-12d3-a456-426614174010',
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.cme_id !== null)
+  @IsUUID()
+  cme_id?: string | null;
+
+  @ApiPropertyOptional({
     description: 'Captain user ID to assign to workshop, or null to unassign',
     example: '123e4567-e89b-12d3-a456-426614174002',
     nullable: true,

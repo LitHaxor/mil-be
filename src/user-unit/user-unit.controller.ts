@@ -57,6 +57,7 @@ export class UserUnitController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all user units',
@@ -79,6 +80,7 @@ export class UserUnitController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get units in workshop',
@@ -100,6 +102,7 @@ export class UserUnitController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get user unit by ID',

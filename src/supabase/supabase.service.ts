@@ -44,6 +44,14 @@ export class SupabaseService {
     });
   }
 
+  // remove a user by their auth id - useful when DB operations fail after signup
+  async deleteUser(userId: string) {
+    // supabase Admin API doesn’t expose a direct delete, but we can use
+    // auth.admin.deleteUser when available. If not, fall back to service role
+    // client to remove via admin.users.delete.
+    return await this.supabaseAdmin.auth.admin.deleteUser(userId);
+  }
+
   async getUser(accessToken: string) {
     return await this.supabase.auth.getUser(accessToken);
   }

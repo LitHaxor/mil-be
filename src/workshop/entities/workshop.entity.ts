@@ -51,6 +51,14 @@ export class Workshop {
   @JoinColumn({ name: 'store_man_id' })
   store_man: User;
 
+  // chief maintenance engineer slot
+  @Column({ nullable: true })
+  cme_id: string;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'cme_id' })
+  cme: User;
+
   @Column({ nullable: true })
   captain_id: string;
 

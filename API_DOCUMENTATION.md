@@ -150,7 +150,7 @@ All endpoints (except login) require Bearer token authentication.
 
 ### PATCH `/workshops/:id/assign-roles`
 
-**Description:** Assign roles (inspector, store_man, captain, OC) to workshop  
+**Description:** Assign roles (inspector, store_man, cme, captain, OC) to workshop  
 **Roles:** ADMIN, OC  
 **Request Body:**
 
@@ -158,6 +158,7 @@ All endpoints (except login) require Bearer token authentication.
 {
   "inspector_id": "uuid",
   "store_man_id": "uuid",
+  "cme_id": "uuid",
   "captain_id": "uuid",
   "oc_id": "uuid"
 }
@@ -174,6 +175,7 @@ All endpoints (except login) require Bearer token authentication.
   "isReady": true,
   "inspector": { "assigned": true, "user": {...} },
   "store_man": { "assigned": true, "user": {...} },
+  "cme": { "assigned": true, "user": {...} },
   "captain": { "assigned": true, "user": {...} },
   "oc": { "assigned": true, "user": {...} }
 }

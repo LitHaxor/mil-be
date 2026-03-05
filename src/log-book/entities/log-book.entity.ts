@@ -28,6 +28,7 @@ export enum LogType {
   INVENTORY_RESTORED = 'inventory_restored',
   WORKSHOP_ASSIGNED_INSPECTOR = 'workshop_assigned_inspector',
   WORKSHOP_ASSIGNED_STORE_MAN = 'workshop_assigned_store_man',
+  WORKSHOP_ASSIGNED_CME = 'workshop_assigned_cme',
   WORKSHOP_ASSIGNED_CAPTAIN = 'workshop_assigned_captain',
   WORKSHOP_ASSIGNED_OC = 'workshop_assigned_oc',
 }

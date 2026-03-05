@@ -342,9 +342,79 @@ export class AuthService {
         permissions.navigation = [
           { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
           {
+            label: 'Entries',
+            path: '/dashboard/entries',
+            icon: 'ClipboardList',
+          },
+          {
+            label: 'Exits',
+            path: '/dashboard/exits',
+            icon: 'LogOut',
+          },
+          {
             label: 'Job Cart',
             path: '/dashboard/store-man',
             icon: 'ShoppingCart',
+          },
+          {
+            label: 'Inventory',
+            path: '/dashboard/inventory',
+            icon: 'Package',
+          },
+        ];
+        break;
+
+      case UserRole.CME:
+        // CME should NOT be connected to the store-man area.
+        // CME is view-only: can see job carts, inventory, entries and exits but cannot modify.
+        permissions.pages = [
+          'dashboard',
+          'job-carts',
+          'inventory',
+          'entries',
+          'exits',
+        ];
+        permissions.features = {
+          units: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
+          inventory: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+            canAdjust: false,
+          },
+          jobCarts: {
+            canCreate: false,
+            canView: true,
+            canComplete: false,
+            canDelete: false,
+          },
+          consumeRequests: {
+            canCreate: false,
+            canApprove: false,
+            canReject: false,
+            canView: true,
+            canDelete: false,
+          },
+          logBook: {
+            canCreate: false,
+            canEdit: false,
+            canDelete: false,
+            canView: true,
+          },
+          chat: { canCreate: false, canView: true, canDelete: false },
+        };
+        permissions.navigation = [
+          { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
+          {
+            label: 'Job Carts',
+            path: '/dashboard/job-carts',
+            icon: 'Wrench',
           },
           {
             label: 'Inventory',

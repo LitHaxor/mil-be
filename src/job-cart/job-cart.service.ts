@@ -183,8 +183,8 @@ export class JobCartService {
       queryBuilder.andWhere('job_cart.workshop_id = :workshopId', {
         workshopId: user.workshop_id,
       });
-    } else if (user.role === UserRole.STORE_MAN && user.workshop_id) {
-      // Store_man: see ALL job carts from their workshop
+    } else if ((user.role === UserRole.STORE_MAN || user.role === UserRole.CME) && user.workshop_id) {
+      // Store_man or CME: see ALL job carts from their workshop
       queryBuilder.andWhere('job_cart.workshop_id = :workshopId', {
         workshopId: user.workshop_id,
       });
@@ -209,7 +209,7 @@ export class JobCartService {
       });
     }
 
-    if (filters?.status && user.role !== UserRole.STORE_MAN) {
+    if (filters?.status && user.role !== UserRole.STORE_MAN && user.role !== UserRole.CME) {
       queryBuilder.andWhere('job_cart.status = :status', {
         status: filters.status,
       });

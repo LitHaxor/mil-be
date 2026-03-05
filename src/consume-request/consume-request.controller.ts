@@ -65,6 +65,7 @@ export class ConsumeRequestController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all consume requests',
@@ -109,6 +110,7 @@ export class ConsumeRequestController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get consume request by ID',

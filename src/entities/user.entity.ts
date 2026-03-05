@@ -15,6 +15,7 @@ export enum UserRole {
   CAPTAIN = 'captain',
   INSPECTOR_RI_AND_I = 'inspector_ri&i',
   STORE_MAN = 'store_man',
+  CME = 'cme',
 }
 
 @Entity('users')
@@ -25,8 +26,8 @@ export class User {
   @Column({ unique: true })
   email!: string;
 
-  @Column({ type: 'int', unique: true, nullable: true })
-  user_ba_no?: number;
+  @Column({ type: 'bigint', unique: true, nullable: true })
+  user_ba_no?: string;
 
   @Column({ nullable: true })
   full_name?: string;

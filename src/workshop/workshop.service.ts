@@ -58,6 +58,7 @@ export class WorkshopService {
       UserRole.OC,
       UserRole.INSPECTOR_RI_AND_I,
       UserRole.STORE_MAN,
+      UserRole.CME,
     ];
     if (restrictedRoles.includes(userRole as UserRole) && userId) {
       // Filter to only the workshop where this user's workshop_id matches
@@ -324,6 +325,7 @@ export class WorkshopService {
     const previousAssignments = {
       inspector_id: workshop.inspector_id,
       store_man_id: workshop.store_man_id,
+      cme_id: workshop.cme_id,
       captain_id: workshop.captain_id,
       oc_id: workshop.oc_id,
     };
@@ -441,6 +443,53 @@ export class WorkshopService {
           logs.push({
             logType: LogType.WORKSHOP_ASSIGNED_STORE_MAN,
             description: `Store Man reassigned from ${previousAssignments.store_man_id || 'none'} to ${assignRolesDto.store_man_id}`,
+          });
+        }
+      }
+
+      // ── CME ───────────────────────────────────────────────────────────────
+      if (Object.prototype.hasOwnProperty.call(assignRolesDto, 'cme_id')) {
+        if (assignRolesDto.cme_id === null) {
+          await clearRole(previousAssignments.cme_id, 'cme_id');
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_CME,
+            description: `CME unassigned (was ${previousAssignments.cme_id || 'none'})`,
+          });
+        } else {
+          const cme = await manager.findOne(User, {
+            where: { id: assignRolesDto.cme_id },
+          });
+
+          if (!cme) {
+            throw new NotFoundException(
+              `CME with ID ${assignRolesDto.cme_id} not found`,
+            );
+          }
+
+          if (cme.role !== UserRole.CME) {
+            throw new BadRequestException(
+              'User must have CME role to be assigned as CME',
+            );
+          }
+
+          // Clear previous cme's workshop_id
+          if (
+            previousAssignments.cme_id &&
+            previousAssignments.cme_id !== assignRolesDto.cme_id
+          ) {
+            await manager.update(User, previousAssignments.cme_id, {
+              workshop_id: null as any,
+            });
+          }
+
+          workshop.cme_id = assignRolesDto.cme_id!;
+          await manager.update(User, assignRolesDto.cme_id!, {
+            workshop_id: workshopId,
+          });
+
+          logs.push({
+            logType: LogType.WORKSHOP_ASSIGNED_CME,
+            description: `CME reassigned from ${previousAssignments.cme_id || 'none'} to ${assignRolesDto.cme_id}`,
           });
         }
       }
@@ -590,6 +639,7 @@ export class WorkshopService {
     const roleToField: Partial<Record<UserRole, string>> = {
       [UserRole.INSPECTOR_RI_AND_I]: 'inspector_id',
       [UserRole.STORE_MAN]: 'store_man_id',
+      [UserRole.CME]: 'cme_id',
       [UserRole.CAPTAIN]: 'captain_id',
       [UserRole.OC]: 'oc_id',
     };
@@ -687,6 +737,7 @@ export class WorkshopService {
     const missingRoles: string[] = [];
     if (!workshop.inspector_id) missingRoles.push('inspector');
     if (!workshop.store_man_id) missingRoles.push('store_man');
+    if (!workshop.cme_id) missingRoles.push('cme');
     if (!workshop.captain_id) missingRoles.push('captain');
     if (!workshop.oc_id) missingRoles.push('oc');
 
@@ -701,6 +752,9 @@ export class WorkshopService {
           : null,
         store_man: workshop.store_man
           ? { id: workshop.store_man.id, name: workshop.store_man.full_name }
+          : null,
+        cme: workshop.cme
+          ? { id: workshop.cme.id, name: workshop.cme.full_name }
           : null,
         captain: workshop.captain
           ? { id: workshop.captain.id, name: workshop.captain.full_name }

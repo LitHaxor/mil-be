@@ -49,7 +49,7 @@ export class LogBookController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I, UserRole.CME)
   @ApiOperation({
     summary: 'Get all log entries',
     description: 'Retrieve all log entries, optionally filtered by user unit',
@@ -66,7 +66,7 @@ export class LogBookController {
   }
 
   @Get('user-unit/:userUnitId')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I, UserRole.CME)
   @ApiOperation({
     summary: 'Get logs by user unit',
     description: 'Get all log entries for a specific user unit',
@@ -79,7 +79,7 @@ export class LogBookController {
   }
 
   @Get('user-unit/:userUnitId/workshop-history')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I, UserRole.CME)
   @ApiOperation({
     summary: 'Get workshop history',
     description: 'Get workshop visit history for a specific user unit',
@@ -93,7 +93,7 @@ export class LogBookController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.INSPECTOR_RI_AND_I, UserRole.CME)
   @ApiOperation({
     summary: 'Get log entry by ID',
     description: 'Retrieve a specific log entry by ID',

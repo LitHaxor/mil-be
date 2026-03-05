@@ -64,6 +64,7 @@ export class EntryController {
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all entries',
@@ -117,6 +118,7 @@ export class EntryController {
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get entry by ID',

@@ -1,9 +1,9 @@
 import {
   IsEmail,
-  IsInt,
   IsString,
   MinLength,
   ValidateIf,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
@@ -18,13 +18,14 @@ export class LoginDto {
   email?: string;
 
   @ApiPropertyOptional({
-    description: 'User BA Number (integer)',
-    example: 123456,
+    description: 'User BA Number (digits as string)',
+    example: '123456',
   })
   @ValidateIf((o) => !o.email)
-  @IsInt()
-  @Type(() => Number)
-  user_ba_no?: number;
+  @Type(() => String)
+  @IsString()
+  @Matches(/^[0-9]+$/, { message: 'User BA Number must contain only digits' })
+  user_ba_no?: string;
 
   @ApiProperty({
     description: 'User password (minimum 6 characters)',

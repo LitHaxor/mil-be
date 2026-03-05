@@ -68,6 +68,7 @@ export class JobCartController {
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all job carts',
@@ -128,6 +129,7 @@ export class JobCartController {
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get job cart by ID',

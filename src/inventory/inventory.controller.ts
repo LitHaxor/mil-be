@@ -61,6 +61,7 @@ export class InventoryController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all inventory items',
@@ -79,7 +80,7 @@ export class InventoryController {
   }
 
   @Get('low-stock/:workshopId')
-  @Roles(UserRole.ADMIN, UserRole.OC)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.CME)
   @ApiOperation({
     summary: 'Get low stock items',
     description: 'Get inventory items below minimum quantity threshold',
@@ -128,7 +129,7 @@ export class InventoryController {
   }
 
   @Get('stock-update-requests')
-  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.STORE_MAN)
+  @Roles(UserRole.ADMIN, UserRole.OC, UserRole.STORE_MAN, UserRole.CME)
   @ApiOperation({
     summary: 'List stock update requests',
     description:
@@ -218,6 +219,7 @@ export class InventoryController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({ summary: 'Get inventory item by ID' })
   @ApiParam({ name: 'id', description: 'Inventory item ID' })

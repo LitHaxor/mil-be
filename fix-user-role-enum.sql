@@ -8,7 +8,7 @@ UPDATE users SET role = 'inspector_ri&i' WHERE role = 'inspector';
 
 -- Step 2: Drop and recreate the enum type with correct values
 ALTER TYPE users_role_enum RENAME TO users_role_enum_old;
-CREATE TYPE users_role_enum AS ENUM('admin', 'oc', 'captain', 'inspector_ri&i', 'store_man');
+CREATE TYPE users_role_enum AS ENUM('admin', 'oc', 'captain', 'inspector_ri&i', 'store_man', 'cme');
 ALTER TABLE users ALTER COLUMN role TYPE users_role_enum USING role::text::users_role_enum;
 DROP TYPE users_role_enum_old;
 

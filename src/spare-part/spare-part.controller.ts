@@ -54,6 +54,7 @@ export class SparePartController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all spare parts',
@@ -77,6 +78,7 @@ export class SparePartController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Search spare parts',
@@ -99,6 +101,7 @@ export class SparePartController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get spare part by ID',

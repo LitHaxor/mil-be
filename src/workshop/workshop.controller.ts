@@ -51,11 +51,12 @@ export class WorkshopController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get all workshops',
     description:
-      'Retrieve all workshops (filtered by assignment for inspectors and store managers)',
+      'Retrieve all workshops (filtered by assignment for inspectors, store managers, and CME)',
   })
   @ApiResponse({ status: 200, description: 'Returns list of workshops' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -70,6 +71,7 @@ export class WorkshopController {
     UserRole.CAPTAIN,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get dashboard analytics',
@@ -115,6 +117,7 @@ export class WorkshopController {
     UserRole.OC,
     UserRole.INSPECTOR_RI_AND_I,
     UserRole.STORE_MAN,
+    UserRole.CME,
   )
   @ApiOperation({
     summary: 'Get workshop by ID',
